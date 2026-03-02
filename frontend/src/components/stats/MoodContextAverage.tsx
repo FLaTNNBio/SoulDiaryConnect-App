@@ -3,16 +3,27 @@ import { View, Text, StyleSheet, DimensionValue } from 'react-native';
 import { Colors } from '../../constants/Colors'; 
 import { commonStyles } from '../../styles/CommonStyles';
 
-export default function MoodContextAverage() {
-  const contextAverages = [
-    { id: '1', context: 'Amici', score: 3.8 },
-    { id: '2', context: 'Famiglia', score: 3.1 },
-    { id: '3', context: 'Lavoro', score: 2.5 },
-    { id: '4', context: 'Studio', score: 2.0 },
-    { id: '5', context: 'Solitudine', score: 1.2 },
-  ];
+interface MoodContextAverageProps {
+  data: {
+    labels: string[];
+    medie: number[];
+    emojis: string[];
+  };
+}
 
-  const LABEL_WIDTH = 80;
+export default function MoodContextAverage({ data }: MoodContextAverageProps) {
+  
+  if (!data || !data.labels || data.labels.length === 0) return null;
+
+  // Funzione per determinare il colore della barra in base al punteggio (1-4)
+  const getBarColor = (score: number) => {
+    if (score >= 3.5) return '#66BB6A'; // Verde (Positivo)
+    if (score >= 2.5) return '#BA68C8'; // Lilla (Neutro) - Ora include il 2.5
+    if (score >= 1.8) return '#FFCA28'; // Giallo (Ansioso)
+    return '#EF5350';                   // Rosso (Critico/Negativo)
+  };
+
+  const LABEL_WIDTH = 100;
 
   return (
     <View style={commonStyles.border_card}>
@@ -32,22 +43,28 @@ export default function MoodContextAverage() {
           ))}
         </View>
 
-        {/* GRAPH LINES */}
-        {contextAverages.map((item) => {
-          const barWidthPercentage = `${(item.score / 4) * 100}%` as DimensionValue;
+        {/* GRAPH LINES - DATI REALI DAL BACKEND */}
+        {data.labels.map((label, index) => {
+          const score = data.medie[index] || 0;
+          const barWidthPercentage = `${(score / 4) * 100}%` as DimensionValue;
+          const emoji = data.emojis[index] || '';
+
           return (
-            <View key={item.id} style={styles.barRow}>
+            <View key={index} style={styles.barRow}>
               <Text style={[styles.yAxisLabel, { width: LABEL_WIDTH }]} numberOfLines={1}>
-                {item.context}
+                {emoji} {label}
               </Text>
               <View style={styles.barTrack}>
                 <View 
                   style={[
                     styles.barFill, 
-                    { width: barWidthPercentage, backgroundColor: Colors.primary }
+                    { 
+                      width: barWidthPercentage, 
+                      backgroundColor: getBarColor(score) // <--- COLORE DINAMICO
+                    }
                   ]} 
                 />
-                <Text style={styles.scoreText}>{item.score.toFixed(1)}</Text>
+                <Text style={styles.scoreText}>{score.toFixed(1)}</Text>
               </View>
             </View>
           );
@@ -60,20 +77,12 @@ export default function MoodContextAverage() {
           ))}
         </View>
 
-        {/* LEGEND */}
+        {/* LEGEND - MAPPA COLORI */}
         <View style={styles.legendContainer}>
-          <View style={styles.legendItem}>
-            <Text style={styles.legendText}><Text style={styles.legendBold}>1</Text> Negativo</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <Text style={styles.legendText}><Text style={styles.legendBold}>2</Text> Ansioso</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <Text style={styles.legendText}><Text style={styles.legendBold}>3</Text> Neutro</Text>
-          </View>
-          <View style={styles.legendItem}>
-            <Text style={styles.legendText}><Text style={styles.legendBold}>4</Text> Positivo</Text>
-          </View>
+          <LegendItem color="#EF5350" label="Negativo" score="1" />
+          <LegendItem color="#FFCA28" label="Ansioso" score="2" />
+          <LegendItem color="#BA68C8" label="Neutro" score="3" />
+          <LegendItem color="#66BB6A" label="Positivo" score="4" />
         </View>
 
       </View>
@@ -81,11 +90,20 @@ export default function MoodContextAverage() {
   );
 }
 
+// Sottocomponente per la legenda
+const LegendItem = ({ color, label, score }: { color: string, label: string, score: string }) => (
+  <View style={styles.legendItem}>
+    <View style={[styles.legendIndicator, { backgroundColor: color }]} />
+    <Text style={styles.legendText}><Text style={styles.legendBold}>{score}</Text> {label}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
   descriptionText: {
     fontSize: 13,
     color: Colors.textGray,
     marginBottom: 20,
+    lineHeight: 18,
   },
   chartWrapper: {
     width: '100%',
@@ -112,8 +130,8 @@ const styles = StyleSheet.create({
     zIndex: 1,
   },
   yAxisLabel: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: 12,
+    fontWeight: '700',
     color: Colors.textDark,
     paddingRight: 10,
   },
@@ -121,20 +139,20 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    height: 24,
-    backgroundColor: 'rgba(243, 244, 246, 0.8)',
-    borderRadius: 12,
+    height: 20,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
   },
   barFill: {
     height: '100%',
-    borderRadius: 12,
+    borderRadius: 10,
   },
   scoreText: {
     position: 'absolute',
-    right: 10,
-    fontSize: 11,
-    fontWeight: 'bold',
-    color: Colors.textGray,
+    right: 8,
+    fontSize: 10,
+    fontWeight: '900',
+    color: Colors.textDark,
   },
   xAxisContainer: {
     flexDirection: 'row',
@@ -164,6 +182,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 5,
+    gap: 4,
+  },
+  legendIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 2,
   },
   legendText: {
     fontSize: 11,

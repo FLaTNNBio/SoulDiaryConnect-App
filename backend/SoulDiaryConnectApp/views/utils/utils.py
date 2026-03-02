@@ -1,4 +1,4 @@
-from .constants import EMOZIONI_EMOJI, CONTESTI_EMOJI
+from .constants import EMOZIONI_EMOJI, CONTESTI_EMOJI, EMOZIONI_CATEGORIE
 
 def get_emoji_for_context(contesto):
     """
@@ -21,3 +21,12 @@ def get_emoji_for_emotion(emozione):
     
     emozione_lower = emozione.lower().strip()
     return EMOZIONI_EMOJI.get(emozione_lower, '💭')
+
+def get_emotion_category(emozione):
+    """
+    Restituisce la categoria dell'emozione per la colorazione CSS.
+    """
+    if not emozione:
+        return 'neutral'
+    emozione_lower = emozione.lower().strip()
+    return EMOZIONI_CATEGORIE.get(emozione_lower, 'neutral')

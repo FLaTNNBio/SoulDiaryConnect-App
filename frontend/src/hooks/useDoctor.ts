@@ -14,6 +14,7 @@ export const useDoctor = () => {
     const [selectedNote, setSelectedNote] = useState<any>(null);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
     const [clinicalSummary, setClinicalSummary] = useState<any>(null);
+    const [moodStats, setMoodStats] = useState<any>(null);
 
     // 1. Doctor profile
     const fetchProfile = useCallback(async () => {
@@ -206,6 +207,32 @@ export const useDoctor = () => {
         }
     }, []);
 
+
+    // 9. Mood Stats
+    const fetchMoodStats = useCallback(async (patientId: string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            
+            // Chiamata all'API appena creata in Django
+            const response = await axios.get(`${API_URL}/doctor/patients/${patientId}/mood-stats/`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.status === 'success') {
+                setMoodStats(response.data.data);
+                return response.data.data; // Restituiamo i dati per comodità
+            }
+            return null;
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Errore nel caricamento delle statistiche dell'umore");
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     return {
         loading,
         error,
@@ -222,6 +249,8 @@ export const useDoctor = () => {
         addClinicalComment,
         regenerateClinicalAnalysis,
         fetchClinicalSummary,
-        clinicalSummary
+        clinicalSummary,
+        fetchMoodStats,
+        moodStats
     };
 };

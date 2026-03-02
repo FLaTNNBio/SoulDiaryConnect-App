@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   View, 
   Text, 
@@ -7,107 +7,127 @@ import {
   Dimensions 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { BarChart } from 'react-native-chart-kit';
 import { Colors } from '../../constants/Colors'; 
 import { commonStyles } from '../../styles/CommonStyles';
 
 const screenWidth = Dimensions.get('window').width;
 
-export default function MoodContextCorrelation() {
-  const positiveContext = { name: 'Amici', score: '3.8 / 4' };
-  const criticalContext = { name: 'Solitudine', score: '1.2 / 4' };
+interface MoodContextCorrelationProps {
+  data: {
+    labels: string[];
+    positive: number[];
+    neutral: number[];
+    anxious: number[];
+    negative: number[];
+    medie: number[];
+    emojis: string[];
+    contesto_migliore: string;
+    contesto_migliore_emoji: string;
+    contesto_migliore_media: number;
+    contesto_peggiore: string;
+    contesto_peggiore_emoji: string;
+    contesto_peggiore_media: number;
+  };
+}
 
-  // Mock Data for the Bar Chart
-  const barChartData = {
-    labels: ['Study', 'Loneliness', 'Work', 'Friends', 'Family', 'Travel', 'Hobbies'],
-    datasets: [{ data: [12, 18, 8, 15, 10, 7, 11] }],
+export default function MoodContextCorrelation({ data }: MoodContextCorrelationProps) {
+  
+  if (!data || !data.labels || data.labels.length === 0) return null;
+
+  // Highlights dati reali
+  const positiveContext = { 
+    name: `${data.contesto_migliore_emoji || ''} ${data.contesto_migliore}`.trim(), 
+    score: `${data.contesto_migliore_media.toFixed(1)} / 4` 
+  };
+  
+  const criticalContext = { 
+    name: `${data.contesto_peggiore_emoji || ''} ${data.contesto_peggiore}`.trim(), 
+    score: `${data.contesto_peggiore_media.toFixed(1)} / 4` 
   };
 
-  // Calculate dynamic width based on labels to enable horizontal scrolling
-  const dynamicChartWidth = Math.max(screenWidth - 60, barChartData.labels.length * 70);
+  // Calcolo scala grafico
+  const allValues = [...data.positive, ...data.neutral, ...data.anxious, ...data.negative];
+  const maxValue = Math.max(...allValues, 1);
+  const chartHeight = 140;
 
   return (
-    <View style={[commonStyles.border_card]}>
+    <View style={commonStyles.border_card}>
       
-      {/* DESCRIPTION SECTION */}
+      {/* --- DESCRIZIONE --- */}
       <Text style={styles.descriptionText}>
         Questa analisi mostra come lo stato emotivo del paziente varia in base al contesto sociale. 
         Permette di identificare quali contesti sono associati ad emozioni positive o negative.
       </Text>
 
-      {/* HIGHLIGHTS SECTION */}
+      {/* --- HIGHLIGHTS BOXES --- */}
       <View style={styles.highlightsContainer}>
         <View style={[styles.highlightBox, styles.highlightPositive]}>
           <View style={styles.highlightHeader}>
-            <Ionicons name="arrow-up-circle-outline" size={20} color={Colors.darkGreen} />
+            <Ionicons name="arrow-up-circle-outline" size={18} color={Colors.darkGreen} />
             <Text style={[styles.highlightTitle, { color: Colors.darkGreen }]}>Più positivo</Text>
           </View>
-          <Text style={styles.contextName}>{positiveContext.name}</Text>
+          <Text style={styles.contextName} numberOfLines={1}>{positiveContext.name}</Text>
           <Text style={styles.contextScore}>Media: {positiveContext.score}</Text>
         </View>
 
         <View style={[styles.highlightBox, styles.highlightCritical]}>
           <View style={styles.highlightHeader}>
-            <Ionicons name="warning-outline" size={20} color={Colors.red} />
+            <Ionicons name="warning-outline" size={18} color={Colors.red} />
             <Text style={[styles.highlightTitle, { color: Colors.red }]}>Più critico</Text>
           </View>
-          <Text style={styles.contextName}>{criticalContext.name}</Text>
+          <Text style={styles.contextName} numberOfLines={1}>{criticalContext.name}</Text>
           <Text style={styles.contextScore}>Media: {criticalContext.score}</Text>
         </View>
       </View>
-      
-      {/* GRAPH  */}
-      <Text style={styles.chartTitle}>Frequenza note per contesto</Text>
 
-      <View style={styles.chartMainContainer}>
-        {/* VERTICAL Y-AXIS LABEL */}
-        <View style={styles.verticalTextWrapper}>
-          <Text style={styles.verticalText}>NOTES COUNT</Text>
-        </View>
+      <Text style={styles.chartTitle}>Distribuzione Emozioni per Contesto</Text>
 
-        {/* HORIZONTAL SCROLL FOR THE CHART */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={true}
-          style={styles.horizontalScroll}
-        >
-          <BarChart
-            data={barChartData}
-            width={dynamicChartWidth}
-            height={220}
-            yAxisLabel=""
-            yAxisSuffix=""
-            fromZero={true}
-            showValuesOnTopOfBars={true}
-            chartConfig={{
-              backgroundColor: Colors.white,
-              backgroundGradientFrom: Colors.white,
-              backgroundGradientTo: Colors.white,
-              decimalPlaces: 0,
-              color: (opacity = 1) => Colors.primary,
-              labelColor: () => Colors.textGray,
-              barPercentage: 0.6,
-              propsForLabels: { 
-                fontSize: 10 },
-              propsForBackgroundLines: {
-                stroke: Colors.borderInput,
-                strokeDasharray: "0",
-              }
-            }}
-            style={styles.barChartStyle}
-          />
-        </ScrollView>
+      {/* --- LEGENDA COLORI --- */}
+      <View style={styles.legendContainer}>
+        <LegendItem color="#66BB6A" label="Pos." />
+        <LegendItem color="#BA68C8" label="Neu." />
+        <LegendItem color="#FFCA28" label="Ans." />
+        <LegendItem color="#EF5350" label="Neg." />
       </View>
+
+      {/* --- GRAFICO RAGGRUPPATO --- */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={true}>
+        <View style={styles.chartWrapper}>
+          {data.labels.map((label, index) => (
+            <View key={index} style={styles.contextGroup}>
+              <View style={styles.barsContainer}>
+                <Bar height={(data.positive[index] / maxValue) * chartHeight} color="#66BB6A" value={data.positive[index]} />
+                <Bar height={(data.neutral[index] / maxValue) * chartHeight} color="#BA68C8" value={data.neutral[index]} />
+                <Bar height={(data.anxious[index] / maxValue) * chartHeight} color="#FFCA28" value={data.anxious[index]} />
+                <Bar height={(data.negative[index] / maxValue) * chartHeight} color="#EF5350" value={data.negative[index]} />
+              </View>
+              <Text style={styles.axisLabel}>{data.emojis[index]} {label}</Text>
+            </View>
+          ))}
+        </View>
+      </ScrollView>
+
     </View>
   );
 }
 
+// Helper: Singola colonna
+const Bar = ({ height, color, value }: { height: number, color: string, value: number }) => (
+  <View style={styles.singleBarWrapper}>
+    {value > 0 && <Text style={styles.barValueText}>{value}</Text>}
+    <View style={[styles.barShape, { height: Math.max(height, 2), backgroundColor: color }]} />
+  </View>
+);
+
+// Helper: Legenda
+const LegendItem = ({ color, label }: { color: string, label: string }) => (
+  <View style={styles.legendItem}>
+    <View style={[styles.legendSquare, { backgroundColor: color }]} />
+    <Text style={styles.legendText}>{label}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  cardResize: {
-    flex: 0, 
-    alignSelf: 'stretch',
-    paddingBottom: 20,
-  },
   descriptionText: {
     fontSize: 13,
     color: Colors.textGray,
@@ -117,7 +137,7 @@ const styles = StyleSheet.create({
   highlightsContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: 25,
   },
   highlightBox: {
     width: '48%',
@@ -125,70 +145,56 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
   },
-  highlightPositive: {
-    backgroundColor: '#F1F8E9', //green
-    borderColor: '#C5E1A5',
-  },
-  highlightCritical: {
-    backgroundColor: '#FFEBEE', //red
-    borderColor: '#FFCDD2',
-  },
-  highlightHeader: {
+  highlightPositive: { backgroundColor: '#F1F8E9', borderColor: '#C5E1A5' },
+  highlightCritical: { backgroundColor: '#FFEBEE', borderColor: '#FFCDD2' },
+  highlightHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 4, gap: 4 },
+  highlightTitle: { fontSize: 10, fontWeight: '700', textTransform: 'uppercase' },
+  contextName: { fontSize: 15, fontWeight: '800', color: Colors.textDark },
+  contextScore: { fontSize: 12, color: Colors.textGray },
+  
+  chartTitle: { fontSize: 14, fontWeight: '700', color: Colors.textDark, textAlign: 'center', marginBottom: 10 },
+  legendContainer: { flexDirection: 'row', justifyContent: 'center', gap: 12, marginBottom: 15 },
+  legendItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  legendSquare: { width: 10, height: 10, borderRadius: 2 },
+  legendText: { fontSize: 11, color: Colors.textGray },
+
+  chartWrapper: {
     flexDirection: 'row',
+    alignItems: 'flex-end',
+    paddingBottom: 10,
+    minHeight: 180,
+  },
+  contextGroup: {
     alignItems: 'center',
-    marginBottom: 4,
-    gap: 4,
+    marginHorizontal: 15,
   },
-  highlightTitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-  },
-  contextName: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: Colors.textDark,
-  },
-  contextScore: {
-    fontSize: 12,
-    color: Colors.textGray,
-  },
-  chartTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.textDark,
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  chartMainContainer: {
+  barsContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    height: 240,
+    alignItems: 'flex-end',
+    gap: 3,
+    paddingBottom: 5,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderInput,
   },
-  verticalTextWrapper: {
-    width: 30,             
-    height: 220,           
-    justifyContent: 'center',
+  singleBarWrapper: {
     alignItems: 'center',
+    width: 16,
   },
-  verticalText: {
-    position: 'absolute',
-    width: 220,
-    height: 30,
-    textAlign: 'center',
-    transform: [{ rotate: '-90deg' }],
-    left: -95, //// (Container Width / 2) - (Text Width / 2) -> (15 - 110)
-    alignSelf: 'center', 
+  barShape: {
+    width: '100%',
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+  },
+  barValueText: {
+    fontSize: 8,
     fontWeight: 'bold',
-    fontSize: 10,
     color: Colors.textGray,
+    marginBottom: 2,
   },
-  horizontalScroll: {
-    flex: 1,
+  axisLabel: {
+    marginTop: 8,
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textDark,
   },
-  barChartStyle: {
-    marginTop: 10,
-    paddingRight: 50, 
-    marginLeft: -25,
-  }
 });

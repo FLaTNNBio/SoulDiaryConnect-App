@@ -6,8 +6,14 @@ from .auth_views import token_required
 from ..models import Medico, NotaDiario, Paziente, RiassuntoCasoClinico
 import logging
 from django.views.decorators.csrf import csrf_exempt
-from .utils.utils import get_emoji_for_context, get_emoji_for_emotion
+from .utils.utils import get_emoji_for_context, get_emoji_for_emotion, get_emotion_category
 import json
+from django.utils import timezone
+from datetime import timedelta
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.shortcuts import get_object_or_404
+
 
 logger = logging.getLogger(__name__)
 
@@ -314,126 +320,6 @@ def regenerate_clinical_analysis(request, note_id):
 
 
 
-# def riassunto_caso_clinico(request):
-#     """
-#     View per generare un riassunto del caso clinico di un paziente
-#     basato sulle note di un periodo selezionato.
-#     """
-#     if request.session.get('user_type') != 'medico':
-#         return redirect('/login/')
-
-#     medico_id = request.session.get('user_id')
-#     medico = get_object_or_404(Medico, codice_identificativo=medico_id)
-
-#     paziente_id = request.GET.get('paziente_id')
-#     periodo = request.GET.get('periodo', '7days')  # Default: ultimi 7 giorni
-
-#     if not paziente_id:
-#         messages.error(request, 'Seleziona un paziente.')
-#         return redirect('medico_home')
-
-#     paziente_selezionato = get_object_or_404(Paziente, codice_fiscale=paziente_id)
-
-#     # Verifica che il paziente sia del medico loggato
-#     if paziente_selezionato.med != medico:
-#         messages.error(request, 'Non hai i permessi per visualizzare questo paziente.')
-#         return redirect('medico_home')
-
-#     # Calcola la data di inizio in base al periodo selezionato
-#     oggi = timezone.now()
-
-#     if periodo == '7days':
-#         data_inizio = oggi - timedelta(days=7)
-#         periodo_label = 'Ultimi 7 giorni'
-#     elif periodo == '30days':
-#         data_inizio = oggi - timedelta(days=30)
-#         periodo_label = 'Ultimo mese'
-#     elif periodo == '3months':
-#         data_inizio = oggi - timedelta(days=90)
-#         periodo_label = 'Ultimi 3 mesi'
-#     elif periodo == 'year':
-#         data_inizio = oggi - timedelta(days=365)
-#         periodo_label = 'Ultimo anno'
-#     else:
-#         data_inizio = oggi - timedelta(days=7)
-#         periodo_label = 'Ultimi 7 giorni'
-
-#     # Recupera le note del periodo selezionato
-#     note_periodo = NotaDiario.objects.filter(
-#         paz=paziente_selezionato,
-#         data_nota__gte=data_inizio
-#     ).order_by('data_nota')
-
-#     riassunto = None
-#     data_generazione = None
-
-#     # Controlla se è stata richiesta una nuova generazione
-#     if request.method == 'POST' or request.GET.get('genera') == '1':
-#         if note_periodo.exists():
-#             # Costruisci il contesto per il riassunto
-#             note_testo = []
-#             for nota in note_periodo:
-#                 nota_info = f"Data: {nota.data_nota.strftime('%d/%m/%Y')}"
-#                 if nota.emozione_predominante:
-#                     nota_info += f" | Emozione: {nota.emozione_predominante}"
-#                 nota_info += f"\nNota paziente: {nota.testo_paziente}"
-#                 if nota.testo_clinico:
-#                     nota_info += f"\nAnalisi clinica: {nota.testo_clinico}"
-#                 note_testo.append(nota_info)
-
-#             contesto_note = "\n\n---\n\n".join(note_testo)
-
-#             prompt = get_summary_prompt(paziente_selezionato, periodo_label, note_periodo, contesto_note)
-
-#             riassunto = genera_con_ollama(prompt, max_chars=2000, temperature=0.5)
-#             data_generazione = timezone.now()
-
-#             # Salva o aggiorna il riassunto nel database
-#             riassunto_obj, created = RiassuntoCasoClinico.objects.update_or_create(
-#                 paz=paziente_selezionato,
-#                 med=medico,
-#                 periodo=periodo,
-#                 defaults={
-#                     'testo_riassunto': riassunto,
-#                     'data_generazione': data_generazione,
-#                 }
-#             )
-#         else:
-#             riassunto = "Non sono presenti note nel periodo selezionato."
-#             data_generazione = timezone.now()
-#     else:
-#         # Cerca un riassunto esistente nel database
-#         riassunto_esistente = RiassuntoCasoClinico.objects.filter(
-#             paz=paziente_selezionato,
-#             med=medico,
-#             periodo=periodo
-#         ).first()
-
-#         if riassunto_esistente:
-#             riassunto = riassunto_esistente.testo_riassunto
-#             data_generazione = riassunto_esistente.data_generazione
-
-#     return render(request, 'SoulDiaryConnectApp/riassunto_caso_clinico.html', {
-#         'medico': medico,
-#         'paziente': paziente_selezionato,
-#         'periodo': periodo,
-#         'periodo_label': periodo_label,
-#         'note_periodo': note_periodo,
-#         'num_note': note_periodo.count(),
-#         'riassunto': riassunto,
-#         'data_generazione': data_generazione,
-#     })
-
-from django.utils import timezone
-from datetime import timedelta
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.shortcuts import get_object_or_404
-# Assicurati di avere questi import nel tuo file doctor_views.py:
-# from .models import Paziente, NotaDiario, RiassuntoCasoClinico
-# from .utils.utils import genera_con_ollama, get_summary_prompt
-# from .decorators import token_required
-
 @csrf_exempt
 @token_required
 def get_or_generate_clinical_summary(request, paziente_id):
@@ -546,6 +432,148 @@ def get_or_generate_clinical_summary(request, paziente_id):
              return JsonResponse({"status": "error", "message": "Paziente non trovato."}, status=404)
         except Exception as e:
              print(f"Errore generazione riassunto: {str(e)}")
+             return JsonResponse({"status": "error", "message": str(e)}, status=500)
+
+    return JsonResponse({"status": "error", "message": "Metodo non consentito"}, status=405)
+
+
+@csrf_exempt
+@token_required
+def get_patient_mood_stats(request, paziente_id):
+    if request.user_type != 'medico':
+        return JsonResponse({"status": "error", "message": "Non autorizzato"}, status=403)
+
+    if request.method == 'GET':
+        try:
+            paziente_selezionato = get_object_or_404(Paziente, codice_fiscale=paziente_id)
+            if paziente_selezionato.med_id != request.user_id:
+                return JsonResponse({"status": "error", "message": "Paziente non assegnato a questo medico."}, status=403)
+
+            note_diario = NotaDiario.objects.filter(paz=paziente_selezionato).order_by('data_nota')
+
+            emotion_chart_data = None
+            statistiche = {
+                'totale_note': 0, 'media_emotiva': 0,
+                'emozione_frequente': None, 'emozione_frequente_count': 0, 'emozione_frequente_emoji': ''
+            }
+            correlazione_contesto_data = None
+
+            if note_diario.exists():
+                # --- A. ANDAMENTO EMOTIVO (GRAFICO) ---
+                dates = []
+                full_dates = [] # <--- QUESTO E' IL CAMPO MAGICO CHE MANCAVA!
+                emotions = []
+                emotion_values = []
+
+                category_score_map = {
+                    'positive': 4, 'neutral': 3, 'anxious': 2, 'negative': 1,
+                }
+
+                contatore_emozioni = {}
+                somma_valori = 0
+
+                for nota in note_diario:
+                    if nota.emozione_predominante:
+                        emozione_lower = nota.emozione_predominante.lower()
+                        dates.append(nota.data_nota.strftime('%d/%m'))
+                        full_dates.append(nota.data_nota.strftime('%Y-%m-%d')) # <--- AGGIUNTO QUI
+                        emotions.append(emozione_lower)
+
+                        categoria = get_emotion_category(emozione_lower)
+                        score = category_score_map.get(categoria, 2)
+                        emotion_values.append(score)
+                        somma_valori += score
+
+                        contatore_emozioni[emozione_lower] = contatore_emozioni.get(emozione_lower, 0) + 1
+
+                if dates:
+                    emotion_chart_data = {
+                        'dates': dates,
+                        'full_dates': full_dates, # <--- AGGIUNTO QUI
+                        'emotions': emotions,
+                        'values': emotion_values,
+                    }
+
+                    media_emotiva = somma_valori / len(emotion_values) if emotion_values else 0
+                    emozione_piu_frequente = max(contatore_emozioni.items(), key=lambda x: x[1]) if contatore_emozioni else (None, 0)
+
+                    statistiche = {
+                        'totale_note': note_diario.count(),
+                        'media_emotiva': round(media_emotiva, 2),
+                        'emozione_frequente': emozione_piu_frequente[0].title() if emozione_piu_frequente[0] else None,
+                        'emozione_frequente_count': emozione_piu_frequente[1],
+                        'emozione_frequente_emoji': get_emoji_for_emotion(emozione_piu_frequente[0]),
+                    }
+
+                # --- B. CORRELAZIONI CONTESTO SOCIALE ---
+                contesto_emozioni = {} 
+
+                for nota in note_diario:
+                    contesto = nota.contesto_sociale
+                    emozione = nota.emozione_predominante
+
+                    if contesto and emozione:
+                        contesto_lower = contesto.lower().strip()
+                        emozione_lower = emozione.lower().strip()
+                        categoria_emozione = get_emotion_category(emozione_lower)
+
+                        if contesto_lower not in contesto_emozioni:
+                            contesto_emozioni[contesto_lower] = {
+                                'positive': 0, 'neutral': 0, 'anxious': 0, 'negative': 0,
+                                'total': 0, 'sum': 0,
+                                'emoji': get_emoji_for_context(contesto_lower),
+                            }
+
+                        contesto_emozioni[contesto_lower][categoria_emozione] += 1
+                        contesto_emozioni[contesto_lower]['total'] += 1
+                        contesto_emozioni[contesto_lower]['sum'] += category_score_map.get(categoria_emozione, 2)
+
+                if contesto_emozioni:
+                    contesti_ordinati = sorted(contesto_emozioni.items(), key=lambda x: x[1]['total'], reverse=True)
+
+                    labels, positive_data, neutral_data, anxious_data, negative_data, medie_contesto, emojis = [], [], [], [], [], [], []
+
+                    for contesto, dati in contesti_ordinati:
+                        labels.append(contesto.title())
+                        positive_data.append(dati['positive'])
+                        neutral_data.append(dati['neutral'])
+                        anxious_data.append(dati['anxious'])
+                        negative_data.append(dati['negative'])
+                        media = round(dati['sum'] / dati['total'], 2) if dati['total'] > 0 else 0
+                        medie_contesto.append(media)
+                        emojis.append(dati['emoji'])
+
+                    contesto_migliore = max(contesti_ordinati, key=lambda x: x[1]['sum'] / x[1]['total'] if x[1]['total'] > 0 else 0)
+                    contesto_peggiore = min(contesti_ordinati, key=lambda x: x[1]['sum'] / x[1]['total'] if x[1]['total'] > 0 else 0)
+
+                    correlazione_contesto_data = {
+                        'labels': labels,
+                        'positive': positive_data,
+                        'neutral': neutral_data,
+                        'anxious': anxious_data,
+                        'negative': negative_data,
+                        'medie': medie_contesto,
+                        'emojis': emojis,
+                        'contesto_migliore': contesto_migliore[0].title(),
+                        'contesto_migliore_emoji': contesto_migliore[1]['emoji'],
+                        'contesto_migliore_media': round(contesto_migliore[1]['sum'] / contesto_migliore[1]['total'], 2) if contesto_migliore[1]['total'] > 0 else 0,
+                        'contesto_peggiore': contesto_peggiore[0].title(),
+                        'contesto_peggiore_emoji': contesto_peggiore[1]['emoji'],
+                        'contesto_peggiore_media': round(contesto_peggiore[1]['sum'] / contesto_peggiore[1]['total'], 2) if contesto_peggiore[1]['total'] > 0 else 0,
+                    }
+
+            return JsonResponse({
+                "status": "success", 
+                "data": {
+                    "statistiche": statistiche,
+                    "andamento_emotivo": emotion_chart_data,
+                    "correlazione_contesto": correlazione_contesto_data
+                }
+            })
+
+        except Paziente.DoesNotExist:
+             return JsonResponse({"status": "error", "message": "Paziente non trovato."}, status=404)
+        except Exception as e:
              return JsonResponse({"status": "error", "message": str(e)}, status=500)
 
     return JsonResponse({"status": "error", "message": "Metodo non consentito"}, status=405)
