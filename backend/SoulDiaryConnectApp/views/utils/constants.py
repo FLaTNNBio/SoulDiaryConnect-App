@@ -5,7 +5,6 @@ OLLAMA_MODEL = "llama3.1:8b"  # Cambia in "cbt-assistant" se hai creato il model
 LUNGHEZZA_NOTA_BREVE = 300
 LUNGHEZZA_NOTA_LUNGA = 500
 
-
 KEYWORDS_SUICIDIO = [
     'suicidio', 'suicidarmi', 'suicidarsi', 'uccidermi', 'uccidersi', 'farla finita',
     'togliermi la vita', 'non voglio più vivere', 'meglio morto', 'meglio morta',
@@ -23,7 +22,7 @@ KEYWORDS_VIOLENZA_STALKING = [
     'mi segue', 'mi minaccia', 'minacce', 'violenza', 'abuso', 'abusato', 'abusata',
     'violentato', 'violentata', 'stupro', 'stuprata', 'stuprato', 'molestie',
     'molestato', 'molestata', 'aggredito', 'aggredita', 'botte', 'percosse',
-    'picchiato', 'picchiata', 'mi fa del male', 'ho paura di lui', 'ho paura di lei',
+    'mi fa del male', 'ho paura di lui', 'ho paura di lei',
     'mi controlla', 'controllo ossessivo', 'non mi lascia uscire', 'mi isola',
     'mi terrorizza', 'relazione tossica', 'violenza domestica', 'maltrattamenti', 'picchiarmi',
     'maltrattarmi', 'perseguitarmi', 'minacciarmi', 'aggredirmi', 'molestarmi', 'abuso sessuale',
@@ -35,7 +34,6 @@ KEYWORDS_AUTOLESIONISMO = [
     'bruciarmi', 'graffiarmi', 'punirmi fisicamente', 'mi colpisco', 'mi faccio tagli',
 ]
 
-# Numeri di emergenza
 NUMERI_EMERGENZA = {
     'suicidio': {
         'principale': {
@@ -70,7 +68,6 @@ NUMERI_EMERGENZA = {
     }
 }
 
-# Messaggi di conforto per tipo di emergenza
 MESSAGGI_CONFORTO = {
     'suicidio': """Capisco che stai attraversando un momento di grande sofferenza. Quello che provi è reale e importante, e non devi affrontarlo da solo/a. 
 
@@ -130,7 +127,6 @@ EMOZIONI_EMOJI = {
     'orgoglio': '😌',
     'imbarazzo': '😳',
 }
-
 
 CONTESTI_EMOJI = {
     'lavoro': '💼',

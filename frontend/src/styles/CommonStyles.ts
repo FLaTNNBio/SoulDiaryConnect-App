@@ -32,15 +32,22 @@ export const commonStyles = StyleSheet.create({
         alignItems: 'flex-start',
         backgroundColor: 'transparent',
     },
-    card:{
+    card: {
         backgroundColor: Colors.white,
+        borderWidth:1,
+        borderColor:Colors.borderInput,
         borderRadius: 20,
         padding: 24,
-        shadowColor: Colors.shadow,
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 10,
-        elevation: 5,
+        // --- Ombra per iOS ---
+        shadowColor: Colors.textGray,
+        shadowOffset: { 
+            width: 0, 
+            height: 6 
+        },
+        shadowOpacity: 0.08, 
+        shadowRadius: 16,
+        // --- Ombra per Android ---
+        elevation: 3,
     },
     border_card:{
         width: '100%',

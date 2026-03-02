@@ -1,15 +1,17 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { Alert } from 'react-native';
-import { API_URL } from '../constants/Config';
-import { UserRole } from '../components/TypeSelector';
 import * as SecureStore from 'expo-secure-store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { API_URL } from '../constants/Config';
+import { UserRole } from '../components/TypeSelector';
 
 export const useAccess = (navigation: any) => {
     const [loading, setLoading] = useState(false);
 
+    // ==========================================
     // ----- REGISTRAZIONE ------
+    // ==========================================
     const handleRegister = async (userType: UserRole, form: any) => {
         setLoading(true);
 
@@ -19,7 +21,6 @@ export const useAccess = (navigation: any) => {
         data.append('cognome', form.cognome);
         data.append('email', form.email);
         data.append('password', form.password);
-        console.log('Registrazione: '+form.email)
 
         if (userType === 'doctor') {
             data.append('indirizzo_studio', form.indirizzoStudio);
@@ -40,9 +41,9 @@ export const useAccess = (navigation: any) => {
                 },
             });
 
-            // Controlliamo lo status inviato da Django
             if (response.data.status === 'success') {
                 Alert.alert("Successo", "Registrazione completata!");
+                // Dopo la registrazione mandiamo l'utente al Login normalmente
                 navigation.navigate('Login');
             } else {
                 Alert.alert("Errore", response.data.message || "Errore sconosciuto");
@@ -56,7 +57,9 @@ export const useAccess = (navigation: any) => {
         }
     };
 
+    // ==========================================
     // ----- LOGIN ------
+    // ==========================================
     const handleLogin = async (email: string, password: string) => {
         setLoading(true);
 
@@ -72,18 +75,23 @@ export const useAccess = (navigation: any) => {
             });
 
             if (response.data.status === 'success') {
-                // 1. Salva il Token JWT nella "cassaforte" del telefono
+                // 1. Salva il Token JWT e le info base
                 await SecureStore.setItemAsync('userToken', response.data.token);
-                
-                // 2. Salva il tipo e l'ID utente per sapere come impostare l'interfaccia
                 await AsyncStorage.setItem('user_type', response.data.user_type);
                 await AsyncStorage.setItem('user_id', response.data.user_id);
 
-                // 3. Reindirizza l'utente alla schermata corretta in base al ruolo
+                // 2. Resetta lo stack di navigazione!
+                // Impedisce di tornare al Login premendo "Indietro"
                 if (response.data.user_type === 'medico') {
-                    navigation.navigate('DoctorTabs'); 
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'DoctorTabs' }],
+                    });
                 } else {
-                    navigation.navigate('PatientTabs');
+                    navigation.reset({
+                        index: 0,
+                        routes: [{ name: 'PatientTabs' }],
+                    });
                 }
             } else {
                 Alert.alert("Accesso Negato", response.data.message);
@@ -97,18 +105,26 @@ export const useAccess = (navigation: any) => {
         }
     };
 
+    // ==========================================
     // ----- LOGOUT ------
+    // ==========================================
     const handleLogout = async () => {
         try {
-            // Rimuovi i dati dal telefono
+            // Svuota i dati memorizzati sul dispositivo
             await SecureStore.deleteItemAsync('userToken');
             await AsyncStorage.removeItem('user_type');
             await AsyncStorage.removeItem('user_id');
             
-            // Torna alla schermata di Login
-            navigation.navigate('Index');
+            // Resetta lo stack di navigazione tornando alla pagina iniziale
+            // NOTA: Se la tua pagina iniziale in App.tsx si chiama 'Login' (e non 'Index'), 
+            // cambia 'Index' in 'Login' qui sotto.
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'Index' }], 
+            });
         } catch (error) {
             console.error("Errore durante il logout", error);
+            Alert.alert("Errore", "Impossibile completare il logout.");
         }
     };
 

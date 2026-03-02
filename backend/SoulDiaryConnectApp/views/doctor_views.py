@@ -4,12 +4,14 @@ from .auth_views import token_required
 from ..models import Medico, NotaDiario, Paziente
 import logging
 from django.views.decorators.csrf import csrf_exempt
+from .utils.utils import get_emoji_for_context, get_emoji_for_emotion
+
 logger = logging.getLogger(__name__)
 
 @token_required
 def get_doctor_profile(request):
     """
-    Restituisce le informazioni del profilo del medico loggato.
+    Returns the profile information of the logged in doctor.
     """
     # Security: we guarantee that the person making the request is actually a doctor.
     if request.user_type != 'medico':
@@ -117,58 +119,13 @@ def get_patient_details(request, codice_fiscale):
             'message': 'Paziente non trovato o non autorizzato'
         }, status=404)
 
-# @token_required
-# def get_patient_notes(request, codice_fiscale):
-#     """
-#     Restituisce solo la lista delle note di un paziente specifico.
-#     Verifica che il paziente sia effettivamente assegnato al medico loggato.
-#     """
-#     if request.user_type != 'medico':
-#         return JsonResponse({'status': 'error', 'message': 'Non autorizzato'}, status=403)
-    
-#     try:
-#         # Verifichiamo prima che il paziente appartenga al medico
-#         paziente = Paziente.objects.get(codice_fiscale=codice_fiscale, med_id=request.user_id)
-        
-#         # Recuperiamo le note
-#         note_db = NotaDiario.objects.filter(paz=paziente).order_by('-data_nota')
-        
-#         note_list = []
-#         for nota in note_db:
-#             dt = nota.data_nota
-#             # Gestione sicura fuso orario
-#             if timezone.is_aware(dt):
-#                 data_locale = timezone.localtime(dt)
-#             else:
-#                 data_locale = timezone.make_aware(dt)
-                
-#             note_list.append({
-#                 "id": nota.id,
-#                 "data_iso": data_locale.isoformat(),
-#                 "testo": nota.testo_paziente,
-#                 "emozione": nota.emozione_predominante,
-#                 "generazione_in_corso": nota.generazione_in_corso
-#             })
-
-#         return JsonResponse({
-#             'status': 'success', 
-#             'data': note_list
-#         })
-        
-#     except Paziente.DoesNotExist:
-#         return JsonResponse({'status': 'error', 'message': 'Paziente non trovato'}, status=404)
-#     except Exception as e:
-#         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-    
-
-
 
 @token_required
 def get_patient_notes(request, codice_fiscale):
     """
-    Restituisce la lista delle note di un paziente specifico per la vista Medico.
+    Returns a list of notes for a specific patient for the Doctor view.
     """
-    # Controllo sicurezza: solo i medici possono accedere
+    # Security check: only doctors can access
     if request.user_type != 'medico':
         return JsonResponse({'status': 'error', 'message': 'Non autorizzato'}, status=403)
     
@@ -204,3 +161,45 @@ def get_patient_notes(request, codice_fiscale):
         return JsonResponse({'status': 'error', 'message': 'Paziente non trovato o non associato a te'}, status=404)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@token_required
+def get_pat_note_details(request, codice_fiscale, note_id):
+    try:
+        nota = NotaDiario.objects.get(
+            id=note_id, 
+            paz__codice_fiscale=codice_fiscale, 
+            paz__med_id=request.user_id
+        )
+        
+        data = {
+            "id": nota.id,
+            "testo_paziente": nota.testo_paziente,
+            "testo_supporto": nota.testo_supporto or "",
+            "testo_clinico": nota.testo_clinico or "",
+            
+            # Testo Emozione + Emoji recuperata dalle costanti tramite utility
+            "emozione": nota.emozione_predominante or "", 
+            "emozione_emoji": get_emoji_for_emotion(nota.emozione_predominante),
+            "spiegazione_emozione": nota.spiegazione_emozione or "",
+            
+            # Testo Contesto + Emoji recuperata dalle costanti tramite utility
+            "contesto": nota.contesto_sociale or "",
+            "contesto_emoji": get_emoji_for_context(nota.contesto_sociale),
+            "spiegazione_contesto": nota.spiegazione_contesto or "",
+            
+            "data_formattata": nota.data_nota.strftime('%d/%m/%Y') if nota.data_nota else "",
+            "ora": nota.data_nota.strftime('%H:%M') if nota.data_nota else "",
+            "commento_medico": nota.testo_medico or "",
+            "is_emergency": nota.is_emergency,
+            "tipo_emergenza": nota.tipo_emergenza,
+            "generazione_in_corso": nota.generazione_in_corso
+        }
+        
+        return JsonResponse({"status": "success", "data": data})
+        
+    except NotaDiario.DoesNotExist:
+        return JsonResponse({"status": "error", "message": "Nota non trovata"}, status=404)
+    except Exception as e:
+        print(f"Errore caricamento nota: {str(e)}")
+        return JsonResponse({"status": "error", "message": str(e)}, status=500)

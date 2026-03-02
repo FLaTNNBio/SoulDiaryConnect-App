@@ -3,11 +3,12 @@ from .models import Medico, Paziente, NotaDiario, RiassuntoCasoClinico
 from django.contrib import messages
 from django.utils import timezone
 from django.http import JsonResponse
-from django.db import connection
 from datetime import timedelta
+import logging
 import json
 import threading
 
+logger = logging.getLogger(__name__)
 
 def medico_home(request):
     if request.session.get('user_type') != 'medico':
@@ -40,7 +41,6 @@ def medico_home(request):
         'note_diario': note_diario,
     })
 
-
 def get_emotion_category(emozione):
     """
     Restituisce la categoria dell'emozione per la colorazione CSS.
@@ -49,123 +49,6 @@ def get_emotion_category(emozione):
         return 'neutral'
     emozione_lower = emozione.lower().strip()
     return EMOZIONI_CATEGORIE.get(emozione_lower, 'neutral')
-
-
-def get_emoji_for_context(contesto):
-    """
-    Restituisce l'emoji corrispondente al contesto sociale.
-    Se il contesto non è nel dizionario, restituisce un'emoji di default.
-    """
-    if not contesto:
-        return '📝'
-    contesto_lower = contesto.lower().strip()
-    return CONTESTI_EMOJI.get(contesto_lower, '📝')
-
-
-def get_emoji_for_emotion(emozione):
-    """
-    Restituisce l'emoji corrispondente all'emozione.
-    Se l'emozione non è nel dizionario, restituisce un'emoji di default.
-    """
-    if not emozione:
-        return '💭'
-    emozione_lower = emozione.lower().strip()
-    return EMOZIONI_EMOJI.get(emozione_lower, '💭')
-
-
-def genera_frasi_cliniche(testo, medico, paziente, nota_id=None):
-    """
-    Genera note cliniche personalizzate in base alle preferenze del medico.
-    Include il contesto delle ultime 5 note del paziente (esclusa quella corrente) per una valutazione più completa.
-
-    Args:
-        testo: Testo della nota del paziente
-        medico: Oggetto Medico
-        paziente: Oggetto Paziente
-        nota_id: ID della nota corrente da escludere dal contesto (opzionale)
-
-    Gestisce 4 combinazioni:
-    - Strutturata + Breve
-    - Strutturata + Lunga
-    - Non Strutturata + Breve
-    - Non Strutturata + Lunga
-    """
-    print("Generazione commenti clinici con Ollama")
-
-    try:
-        tipo_nota = medico.tipo_nota  # True per "strutturato", False per "non strutturato"
-        lunghezza_nota = medico.lunghezza_nota  # True per "lungo", False per "breve"
-        tipo_parametri = medico.tipo_parametri.split(".:;!") if medico.tipo_parametri else []
-        testo_parametri = medico.testo_parametri.split(".:;!") if medico.testo_parametri else []
-
-        # Determina la lunghezza massima in caratteri
-        max_chars = LUNGHEZZA_NOTA_LUNGA if lunghezza_nota else LUNGHEZZA_NOTA_BREVE
-
-        # Recupera il contesto delle note precedenti (esclusa quella corrente)
-        contesto_precedente = _recupera_contesto_note_precedenti(paziente, limite=5, escludi_nota_id=nota_id)
-
-        if tipo_nota:
-            # Nota strutturata
-            parametri_strutturati = "\n".join(
-                [f"{tipo}: {txt}" for tipo, txt in zip(tipo_parametri, testo_parametri)]
-            )
-            if lunghezza_nota:
-                # Strutturata + Lunga
-                prompt = _genera_prompt_strutturato_lungo(testo, parametri_strutturati, tipo_parametri, max_chars, contesto_precedente, paziente)
-            else:
-                # Strutturata + Breve
-                prompt = _genera_prompt_strutturato_breve(testo, parametri_strutturati, tipo_parametri, max_chars, contesto_precedente, paziente)
-        else:
-            # Nota non strutturata
-            if lunghezza_nota:
-                # Non Strutturata + Lunga
-                prompt = _genera_prompt_non_strutturato_lungo(testo, max_chars, contesto_precedente, paziente)
-            else:
-                # Non Strutturata + Breve
-                prompt = _genera_prompt_non_strutturato_breve(testo, max_chars, contesto_precedente, paziente)
-
-        return genera_con_ollama(prompt, max_chars=max_chars, temperature=0.6)
-
-    except Exception as e:
-        logger.error(f"Errore nella generazione clinica: {e}")
-        return f"Errore durante la generazione: {e}"
-
-
-def genera_analisi_in_background(nota_id, testo_paziente, medico, paziente):
-    """
-    Funzione che viene eseguita in un thread separato per generare
-    l'analisi clinica, sentiment e contesto sociale in background.
-    """
-    try:
-        # Genera le analisi (passa nota_id per escludere la nota corrente dal contesto)
-        testo_clinico = genera_frasi_cliniche(testo_paziente, medico, paziente, nota_id=nota_id)
-        emozione_predominante, spiegazione_emozione = analizza_sentiment(testo_paziente, paziente)
-        contesto_sociale, spiegazione_contesto = analizza_contesto_sociale(testo_paziente, paziente)
-
-        # Aggiorna la nota nel database
-        nota = NotaDiario.objects.get(id=nota_id)
-        nota.testo_clinico = testo_clinico
-        nota.emozione_predominante = emozione_predominante
-        nota.spiegazione_emozione = spiegazione_emozione
-        nota.contesto_sociale = contesto_sociale
-        nota.spiegazione_contesto = spiegazione_contesto
-        nota.generazione_in_corso = False
-        nota.save()
-
-        logger.info(f"Generazione in background completata per nota {nota_id}")
-    except Exception as e:
-        logger.error(f"Errore nella generazione in background per nota {nota_id}: {e}")
-        # Imposta comunque generazione_in_corso a False per evitare blocchi
-        try:
-            nota = NotaDiario.objects.get(id=nota_id)
-            nota.generazione_in_corso = False
-            nota.testo_clinico = "Errore durante la generazione dell'analisi clinica."
-            nota.save()
-        except:
-            pass
-    finally:
-        connection.close()
-
 
 def paziente_home(request):
     if request.session.get('user_type') != 'paziente':
@@ -243,7 +126,6 @@ def paziente_home(request):
         'medico': medico,
     })
 
-
 def controlla_stato_generazione(request, nota_id):
     """
     View AJAX per controllare lo stato di generazione di una nota.
@@ -262,7 +144,6 @@ def controlla_stato_generazione(request, nota_id):
     except NotaDiario.DoesNotExist:
         return JsonResponse({'error': 'Nota non trovata'}, status=404)
 
-
 def modifica_testo_medico(request, nota_id):
     if request.method == 'POST':
         nota = get_object_or_404(NotaDiario, id=nota_id)
@@ -270,7 +151,6 @@ def modifica_testo_medico(request, nota_id):
         nota.testo_medico = testo_medico
         nota.save()
         return redirect(f'/medico/home/?paziente_id={nota.paz.codice_fiscale}')
-
 
 def personalizza_generazione(request):
     if request.session.get('user_type') != 'medico':
@@ -306,20 +186,6 @@ def personalizza_generazione(request):
         'tipo_parametri': zip(tipo_parametri, testo_parametri),
     })
 
-
-def elimina_nota(request, nota_id):
-    if request.session.get('user_type') != 'paziente':
-        return redirect('/login/')
-    nota = get_object_or_404(NotaDiario, id=nota_id)
-    # Sicurezza: solo il proprietario può eliminare
-    if nota.paz.codice_fiscale != request.session.get('user_id'):
-        return redirect('/paziente/home/')
-    if request.method == 'POST':
-        nota.delete()
-        return redirect('/paziente/home/')
-    return render(request, 'SoulDiaryConnectApp/conferma_eliminazione.html', {'nota': nota})
-
-
 def rigenera_frase_clinica(request):
     """
     View per rigenerare la frase clinica di una nota specifica (AJAX).
@@ -344,7 +210,6 @@ def rigenera_frase_clinica(request):
             return JsonResponse({'error': str(e)}, status=500)
     return JsonResponse({'error': 'Richiesta non valida.'}, status=400)
 
-
 def genera_frase_supporto_nota(request, nota_id):
     """
     View per generare la frase di supporto per una nota specifica che non ce l'ha.
@@ -368,7 +233,6 @@ def genera_frase_supporto_nota(request, nota_id):
         return redirect('/paziente/home/')
 
     return redirect('/paziente/home/')
-
 
 def analisi_paziente(request):
     """
@@ -539,7 +403,6 @@ def analisi_paziente(request):
         'note_diario': note_diario,
         'correlazione_contesto_data': correlazione_contesto_data,
     })
-
 
 def riassunto_caso_clinico(request):
     """

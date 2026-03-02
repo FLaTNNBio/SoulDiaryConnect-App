@@ -11,7 +11,7 @@ export const usePatient = () => {
     const [patientInfo, setPatientInfo] = useState<any>(null);
     const [doctorInfo, setDoctorInfo] = useState<any>(null);
 
-    // Salvataggio nota
+    // 1. Creating note
     const createNote = useCallback(async (testo: string, aiSupport: boolean) => {
         setLoading(true);
         setError(null);
@@ -33,7 +33,7 @@ export const usePatient = () => {
         }
     }, []);
 
-    // Lista note
+    // 2. Notes List
     const fetchNotes = useCallback(async () => {
         setLoading(true);
         try {
@@ -49,7 +49,7 @@ export const usePatient = () => {
         }
     }, []);
 
-    // Dettaglio singola nota
+    // Single Note
     const fetchNoteDetails = useCallback(async (id: number) => {
         setLoading(true);
         setError(null);
@@ -69,7 +69,7 @@ export const usePatient = () => {
         }
     }, []);
 
-    // Eliminazione nota
+    // Delete Note
     const deleteNote = useCallback(async (id: number) => {
         setLoading(true);
         try {
@@ -86,7 +86,35 @@ export const usePatient = () => {
         }
     }, []);
 
-    // Info Paziente
+    // Generate Support AI 
+    const generateSupportText = useCallback(async (noteId: number | string) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            // Fai attenzione all'URL: assicurati che sia esattamente quello che hai messo in urls.py
+            const response = await axios.post(`${API_URL}/patient/note/${noteId}/generate-support/`, {}, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.status === 'success') {
+                // Ricarichiamo la nota per aggiornare la UI con la nuova frase
+                await fetchNoteDetails(Number(noteId));
+                return true;
+            } else {
+                setError(response.data.message);
+                return false;
+            }
+        } catch (err: any) {
+            console.error("Errore generazione supporto:", err);
+            setError(err.response?.data?.message || "Errore di connessione al server");
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchNoteDetails]);
+
+    // Info Patient
     const fetchPatientInfo = useCallback(async () => {
         setLoading(true);
         try {
@@ -99,7 +127,7 @@ export const usePatient = () => {
         finally { setLoading(false); }
     }, []);
 
-    // Info Medico
+    // Info Doctor
     const fetchDoctorInfo = useCallback(async () => {
         setLoading(true);
         try {
@@ -114,6 +142,7 @@ export const usePatient = () => {
 
     return { 
         loading, error, notes, selectedNote, patientInfo, doctorInfo,
-        createNote, fetchNotes, fetchNoteDetails, deleteNote, fetchPatientInfo, fetchDoctorInfo 
+        createNote, fetchNotes, fetchNoteDetails, deleteNote, fetchPatientInfo, fetchDoctorInfo,
+        generateSupportText
     };
 };

@@ -11,13 +11,19 @@ urlpatterns = [
     path('doctor/profile/', views.get_doctor_profile, name='doctor_profile'),
     path('doctor/patients/', views.get_doctor_patients, name='doctor_patients'),
     path('doctor/patients/<str:codice_fiscale>/', views.get_patient_details, name='doctor_details_patient'),
+    path('doctor/patients/<str:codice_fiscale>/notes/', views.get_patient_notes, name='get_patient_notes'),
+    path('doctor/patients/<str:codice_fiscale>/notes/<int:note_id>/', views.get_pat_note_details, name='get_patient_note_details'),
+
+    
     path('patient/note/create/', views.create_nota, name='create_note'),
     path('patient/note/', views.get_note, name='get_note'),
     path('patient/info/', views.get_patient_info, name='get_patient_info'),
     path('patient/doctor/', views.get_doctor_info, name='get_doctor_info'),
     path('patient/note/<int:pk>/', views.get_note_details, name='get_note_details'),
     path('patient/note/<int:pk>/delete/', views.delete_nota, name='delete_nota'),
-    path('doctor/patients/<str:codice_fiscale>/notes/', views.get_patient_notes, name='get_patient_notes'),
+    path('patient/note/<int:nota_id>/generate-support/', views.generate_note_support, name='generate-support'),
+    
+
     
 
     # path('medico/home/', views.medico_home, name='medico_home'),

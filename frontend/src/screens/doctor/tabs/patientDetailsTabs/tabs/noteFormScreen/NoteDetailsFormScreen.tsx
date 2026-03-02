@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
     View, 
     ScrollView, 
@@ -8,13 +8,17 @@ import {
     KeyboardAvoidingView,
     Platform,
     TouchableWithoutFeedback,
-    Keyboard
+    Keyboard,
+    ActivityIndicator,
+    TouchableOpacity
 } from 'react-native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
 import { commonStyles } from '../../../../../../styles/CommonStyles';
 import { Colors } from '../../../../../../constants/Colors';
 import { Ionicons } from '@expo/vector-icons';
+import { useDoctor } from '../../../../../../hooks/useDoctor';
 import Navbar from '../../../../../../components/nav/Navbar';
 import NoteCard from '../../../../../../components/notes/cards/NoteCard';
 import Footer from '../../../../../../components/Footer';
@@ -23,52 +27,85 @@ import KeywordList, { KeywordItem } from '../../../../../../components/keywords/
 
 export default function NoteDetailsFormScreen() {
     const [newDoctorComment, setNewDoctorComment] = useState('');
+    const route = useRoute<any>();
+    const navigation = useNavigation();
+    
+    // Recupero parametri dalla navigazione (NoteListScreen)
+    const { patientId, noteId } = route.params;
 
-    const note_details = {
-        id: 1,
-        fullDate: 'Lunedì, 14 Ottobre 2023',
-        time: '18:30',
-        patientNote: {
-            text: "Oggi mi sento molto meglio rispetto a ieri. Ho fatto una passeggiata al parco e il sole mi ha aiutato a schiarirmi le idee. L'ansia era presente stamattina, ma l'ho gestita con gli esercizi di respirazione.",
-        },
-        aiInsight: {
-            hasInsight: true,
-            text: "È fantastico notare come l'esposizione alla natura e l'uso attivo delle tecniche di respirazione abbiano avuto un impatto positivo immediato.",
-        },
-        clinicalAnalysis: {
-            hasAnalysis: true,
-            result: "Frequenza cardiaca: 72 BPM",
-            text: "I parametri rilevati durante la passeggiata mostrano una stabilizzazione del ritmo cardiaco.",
-            date: '14 Ott, 18:45',
-        },
-        previousDoctorComment: {
-            hasComment: true,
-            doctorName: 'Dott. G. Veronesi',
-            date: '15 Ott, 10:15',
-            text: "Ottimo lavoro Mario. L'applicazione degli esercizi di respirazione nel momento del bisogno è un passo fondamentale. Ne parleremo nella prossima seduta.",
+    const { 
+        selectedNote, 
+        loading, 
+        error, 
+        fetchNoteDetails 
+    } = useDoctor();
+
+    // Caricamento dati reali all'avvio
+    useEffect(() => {
+        if (patientId && noteId) {
+            fetchNoteDetails(patientId, noteId);
         }
-    };
+    }, [patientId, noteId, fetchNoteDetails]);
 
-    const mockKeywords: KeywordItem[] = [
-    { id: '1', word: 'Tristezza', emoji: '😢', description: 'Uno stato emotivo caratterizzato da sentimenti di svantaggio, perdita e impotenza.' },
-    { id: '2', word: 'Studio', emoji: '📚', description: 'Attività dedicata all\'apprendimento, che in questo contesto può essere fonte di stress o concentrazione.' },
-    { id: '3', word: 'Ansia', emoji: '⚡', description: 'Stato di agitazione o forte apprensione per eventi futuri o situazioni di incertezza.' },
-    { id: '4', word: 'Natura', emoji: '🌿', description: 'Elemento ambientale che ha favorito il rilassamento e la riduzione del battito cardiaco.' },
-    ];
-
+    // Funzione per salvare la nota clinica del medico
     const handleSaveComment = () => {
-        console.log("Nuovo commento salvato:", newDoctorComment);
+        console.log("Salvataggio commento per nota:", noteId, "Testo:", newDoctorComment);
+        // TODO: Implementare saveDoctorComment nell'hook useDoctor
     };
 
     const handleRegenerateAnalysis = () => {
-        console.log("Chiamata API per rigenerare l'analisi clinica...");
+        console.log("Richiesta rigenerazione analisi clinica per nota:", noteId);
+        // TODO: Implementare regenerateClinicalAnalysis nell'hook useDoctor
     };
+
+    if (loading && !selectedNote) {
+        return (
+            <View style={styles.centered}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={{marginTop: 10, color: Colors.textGray}}>Caricamento dettagli...</Text>
+            </View>
+        );
+    }
+
+    if (error || !selectedNote) {
+        return (
+            <View style={styles.centered}>
+                <Ionicons name="alert-circle-outline" size={50} color="red" />
+                <Text style={styles.errorText}>{error || "Impossibile caricare la nota."}</Text>
+                <TouchableOpacity 
+                    style={styles.backButton} 
+                    onPress={() => navigation.goBack()}
+                >
+                    <Text style={styles.backButtonText}>Torna indietro</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
+    // Costruzione dinamica delle Keywords con dati e emoji dal Backend
+    const realKeywords: KeywordItem[] = [];
+    if (selectedNote.emozione) {
+        realKeywords.push({ 
+            id: 'emo', 
+            word: selectedNote.emozione.charAt(0).toUpperCase() + selectedNote.emozione.slice(1), 
+            emoji: selectedNote.emozione_emoji || '✨', 
+            description: selectedNote.spiegazione_emozione 
+        });
+    }
+    if (selectedNote.contesto) {
+        realKeywords.push({ 
+            id: 'ctx', 
+            word: selectedNote.contesto.charAt(0).toUpperCase() + selectedNote.contesto.slice(1), 
+            emoji: selectedNote.contesto_emoji || '📍', 
+            description: selectedNote.spiegazione_contesto 
+        });
+    }
 
     return (
         <SafeAreaView style={commonStyles.safe_container_log} edges={['top', 'bottom']}>
             <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={{ flex: 1 }}
+                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                style={{ flex: 1 }}
             >
                 <Navbar showBackArrow={true}/>
                 <View style={commonStyles.container_log}>
@@ -80,36 +117,40 @@ export default function NoteDetailsFormScreen() {
                     >
                         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
                             <View style={[commonStyles.page_left, {paddingHorizontal: 15, paddingVertical: 20}]}>
-                            
-                                <KeywordList keywords={mockKeywords} />
+                                <Text style={styles.dateHeader}>{selectedNote.data_formattata}</Text>
+
+                                {realKeywords.length > 0 && (
+                                    <View style={{ marginBottom: 15 }}>
+                                        <KeywordList keywords={realKeywords} />
+                                    </View>
+                                )}
                                 
-                                {/* --- PATIENT --- */}
+                                {/* --- SEZIONE PAZIENTE --- */}
                                 <NoteCard 
-                                    text={note_details.patientNote.text} 
-                                    time={note_details.time} 
+                                    text={selectedNote.testo_paziente} 
+                                    time={selectedNote.ora} 
                                     type='patient'
                                 />
 
-                                {/* --- AI --- */}
-                                {note_details.aiInsight.hasInsight && (
+                                {/* --- SEZIONE AI (SUPPORTO EMPATICO) --- */}
+                                {selectedNote.testo_supporto && (
                                     <NoteCard 
-                                        text={note_details.aiInsight.text} 
-                                        time={note_details.time} 
+                                        text={selectedNote.testo_supporto} 
+                                        time={selectedNote.ora} 
                                         type='ai'
                                     />
                                 )}
 
-                                {/* --- CLINICAL --- */}
-                                {note_details.clinicalAnalysis.hasAnalysis && (
+                                {/* --- SEZIONE ANALISI CLINICA IA --- */}
+                                {selectedNote.testo_clinico && (
                                     <View style={styles.analysisContainer}>
                                         <NoteCard 
-                                            text={note_details.clinicalAnalysis.text} 
-                                            time={note_details.clinicalAnalysis.date}
-                                            result={note_details.clinicalAnalysis.result}
+                                            text={selectedNote.testo_clinico} 
+                                            time={selectedNote.data_formattata}
+                                            result="Analisi Clinica Automatica"
                                             type='clinical_analysis'
                                         />
                                         
-                                        {/* --- REGERATE CLINICAL ANALYSIS --- */}
                                         <View style={styles.regenerateButtonWrapper}>
                                             <AuthButton 
                                                 title='Rigenera analisi clinica' 
@@ -122,26 +163,28 @@ export default function NoteDetailsFormScreen() {
                                     </View>
                                 )}
 
-                                {/* --- DOCTOR --- */}
-                                {note_details.previousDoctorComment.hasComment && (
+                                {/* --- VALUTAZIONE MEDICA ESISTENTE --- */}
+                                {selectedNote.commento_medico && (
                                     <NoteCard 
-                                        doctorName={note_details.previousDoctorComment.doctorName}
-                                        time={note_details.previousDoctorComment.date}
-                                        text={note_details.previousDoctorComment.text}
+                                        doctorName="Tua valutazione precedente"
+                                        time={selectedNote.data_commento_medico || ""}
+                                        text={selectedNote.commento_medico}
                                         type='doctor'
                                     />
                                 )}
 
-                                {/* --- INPUT DOCTOR --- */}
-                                <View style={{width:'100%'}}>
+                                {/* --- INPUT PER NUOVO COMMENTO/AGGIORNAMENTO --- */}
+                                <View style={{width:'100%', marginTop: 10}}>
                                     <View style={styles.inputHeader}>
                                         <Ionicons name="add-circle-outline" size={20} color={Colors.green} />
-                                        <Text style={styles.inputTitle}>Aggiungi una nota clinica</Text>
+                                        <Text style={styles.inputTitle}>
+                                            {selectedNote.commento_medico ? "Aggiorna valutazione" : "Aggiungi valutazione clinica"}
+                                        </Text>
                                     </View>
 
                                     <TextInput
                                         style={commonStyles.inputTextArea}
-                                        placeholder="Inserisci un nuovo aggiornamento per il paziente..."
+                                        placeholder="Scrivi qui le tue osservazioni per il paziente..."
                                         placeholderTextColor={Colors.placeholderInput}
                                         multiline={true}
                                         numberOfLines={4}
@@ -151,7 +194,7 @@ export default function NoteDetailsFormScreen() {
                                     />
                                     
                                     <AuthButton
-                                        title='Pubblica'
+                                        title='Pubblica valutazione'
                                         onPress={handleSaveComment} 
                                         variant='primary'
                                         iconName='checkmark'
@@ -166,10 +209,24 @@ export default function NoteDetailsFormScreen() {
             </KeyboardAvoidingView>
             <StatusBar style="auto" />
         </SafeAreaView>
-     );
+    );
 }
 
 const styles = StyleSheet.create({
+    centered: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: Colors.white,
+        padding: 20
+    },
+    dateHeader: {
+        fontSize: 16,
+        color: Colors.textGray,
+        marginBottom: 15,
+        fontWeight: '600',
+        marginLeft: 5
+    },
     inputHeader: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -183,11 +240,29 @@ const styles = StyleSheet.create({
     },
     analysisContainer: {
         width: '100%',
-        marginBottom: 15, // Dà spazio tra questo blocco intero e la nota successiva (del dottore)
+        marginBottom: 15,
     },
     regenerateButtonWrapper: {
-        marginTop: -15, // Tira leggermente su il bottone per avvicinarlo alla card soprastante
+        marginTop: -15,
         marginBottom: 15,
         width: '100%',
+    },
+    errorText: {
+        color: 'red',
+        textAlign: 'center',
+        marginTop: 10,
+        marginBottom: 20,
+        fontSize: 16
+    },
+    backButton: {
+        paddingVertical: 12,
+        paddingHorizontal: 25,
+        backgroundColor: Colors.primary,
+        borderRadius: 10
+    },
+    backButtonText: {
+        color: Colors.white,
+        fontWeight: 'bold',
+        fontSize: 16
     }
 });

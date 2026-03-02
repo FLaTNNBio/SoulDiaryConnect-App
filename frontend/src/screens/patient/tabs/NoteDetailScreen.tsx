@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react'; // Aggiunto useState
 import { 
     View, 
     ScrollView, 
@@ -16,20 +16,41 @@ import Navbar from '../../../components/nav/Navbar';
 import Footer from '../../../components/Footer';
 import NoteCard from '../../../components/notes/cards/NoteCard';
 import AuthButton from '../../../components/buttons/AuthButton';
-import KeywordList, { KeywordItem } from '../../../components/keywords/KeywordList';
 import { usePatient } from '../../../hooks/usePatient';
 
 export default function NoteDetailScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
-    const { noteId } = route.params; // ID passato dalla navigazione
+    const { noteId } = route.params;
 
-    const { fetchNoteDetails, selectedNote, deleteNote, loading, error } = usePatient();
+    // Estratta la funzione generateSupportText
+    const { fetchNoteDetails, selectedNote, deleteNote, generateSupportText, loading, error } = usePatient();
 
-    // Carica i dati all'apertura
+    // Nuovo stato per gestire il bottone di caricamento
+    const [isGenerating, setIsGenerating] = useState(false);
+
     useEffect(() => {
         fetchNoteDetails(noteId);
     }, [noteId, fetchNoteDetails]);
+
+    // Funzione reale collegata al backend
+    const handleGenerateSupport = async () => {
+        if (isGenerating) return; // Evita doppi click accidentali
+
+        setIsGenerating(true); // Cambia il bottone in "Sto Generando..."
+        
+        const success = await generateSupportText(noteId);
+        
+        setIsGenerating(false); // Riporta il bottone allo stato normale se fallisce
+
+        if (success) {
+            Alert.alert("Generazione completata ✨", "L'intelligenza artificiale ha generato la tua frase di supporto.");
+            // Nota: se ha successo, la pagina si ricaricherà da sola grazie a fetchNoteDetails dentro l'hook, 
+            // facendo sparire il bottone e mostrando la NoteCard dell'IA!
+        } else {
+            Alert.alert("Ops...", "Non è stato possibile generare la frase di supporto in questo momento.");
+        }
+    };
 
     const handleDeleteNote = () => {
         Alert.alert(
@@ -53,7 +74,9 @@ export default function NoteDetailScreen() {
         );
     };
 
-    if (loading && !selectedNote) {
+    // Usiamo una logica speciale: se stiamo solo generando la frase, NON mostriamo il caricamento a tutto schermo
+    // ma mostriamo il caricamento solo se è il primissimo caricamento della pagina
+    if (loading && !selectedNote && !isGenerating) {
         return (
             <View style={{flex:1, justifyContent:'center', backgroundColor: Colors.background}}>
                 <ActivityIndicator size="large" color={Colors.primary} />
@@ -64,7 +87,7 @@ export default function NoteDetailScreen() {
 
     if (error || !selectedNote) {
         return (
-            <SafeAreaView style={commonStyles.safe_container_log}>
+            <SafeAreaView style={commonStyles.safe_container_log} edges={['top', 'bottom']}>
                 <Navbar showBackArrow={true}/>
                 <View style={{flex:1, justifyContent:'center', padding:20}}>
                     <Text style={{textAlign:'center', color:'red'}}>{error || "Nota non trovata"}</Text>
@@ -74,27 +97,8 @@ export default function NoteDetailScreen() {
         );
     }
 
-    // Costruisce la lista delle Keywords basandosi sui dati dell'IA
-    const keywords: KeywordItem[] = [];
-    if (selectedNote.emozione) {
-        keywords.push({ 
-            id: 'emo', 
-            word: selectedNote.emozione.charAt(0).toUpperCase() + selectedNote.emozione.slice(1), 
-            emoji: '✨', 
-            description: selectedNote.spiegazione_emozione 
-        });
-    }
-    if (selectedNote.contesto) {
-        keywords.push({ 
-            id: 'ctx', 
-            word: selectedNote.contesto.charAt(0).toUpperCase() + selectedNote.contesto.slice(1), 
-            emoji: '📍', 
-            description: selectedNote.spiegazione_contesto 
-        });
-    }
-
     return (
-        <SafeAreaView style={commonStyles.safe_container_log} edges={['top']}>
+        <SafeAreaView style={commonStyles.safe_container_log} edges={['top', 'bottom']}>
             <Navbar showBackArrow={true}/>
             <View style={commonStyles.container_log}>
                 <ScrollView 
@@ -105,13 +109,6 @@ export default function NoteDetailScreen() {
                     <View style={[commonStyles.page_left, {paddingHorizontal: 15, paddingVertical: 20}]}>
                         
                         <Text style={styles.dateHeader}>{selectedNote.data_formattata}</Text>
-
-                        {/* --- KEYWORDS DALL'IA --- */}
-                        {keywords.length > 0 && (
-                            <View style={{marginBottom: 10}}>
-                                <KeywordList keywords={keywords} />
-                            </View>
-                        )}
                         
                         {/* --- TESTO PAZIENTE --- */}
                         <NoteCard 
@@ -127,12 +124,26 @@ export default function NoteDetailScreen() {
                                 time={selectedNote.ora} 
                                 type='ai'
                             />
-                        ) : selectedNote.generazione_in_corso ? (
-                            <View style={styles.aiPendingBox}>
-                                <ActivityIndicator size="small" color={Colors.primary} />
-                                <Text style={styles.aiPendingText}>L'intelligenza artificiale sta analizzando la nota...</Text>
+                        ) 
+                        // : selectedNote.generazione_in_corso ? (
+                        //     <View style={styles.aiPendingBox}>
+                        //         <ActivityIndicator size="small" color={Colors.primary} />
+                        //         <Text style={styles.aiPendingText}>L'intelligenza artificiale sta analizzando la nota...</Text>
+                        //     </View>
+                        // ) 
+                        : (
+                            <View style={styles.noSupportBox}>
+                                <Text style={styles.noSupportText}>
+                                    Questa nota non ha ancora una frase di supporto
+                                </Text>
+                                {/* Bottone dinamico in base allo stato isGenerating */}
+                                <AuthButton 
+                                    title={isGenerating ? 'Sto Generando...' : 'Genera Frase di supporto'} 
+                                    onPress={handleGenerateSupport} 
+                                    iconName={isGenerating ? 'hourglass-outline' : 'sparkles'}
+                                />
                             </View>
-                        ) : null}
+                        )}
 
                         {/* --- ELIMINAZIONE --- */}
                         <View style={styles.deleteContainer}>
@@ -156,10 +167,10 @@ export default function NoteDetailScreen() {
 
 const styles = StyleSheet.create({
     dateHeader: {
-        fontSize: 18,
+        fontSize: 15,
         fontWeight: 'bold',
-        color: Colors.textDark,
-        marginBottom: 15,
+        color: Colors.textGray,
+        marginBottom: 30,
         marginLeft: 5
     },
     deleteContainer: {
@@ -184,5 +195,23 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         color: Colors.primary,
         fontStyle: 'italic'
+    },
+    noSupportBox: {
+        alignItems: 'center',
+        width:'100%',
+        paddingVertical: 20,
+        paddingHorizontal: 15,
+        marginBottom: 25,
+        backgroundColor: Colors.white,
+        borderRadius: 15,
+        borderWidth: 1,
+        borderColor: Colors.borderInput,
+    },
+    noSupportText: {
+        color: Colors.textGray,
+        marginBottom: 15,
+        textAlign: 'center',
+        fontStyle: 'italic',
+        fontSize: 16
     }
 });
