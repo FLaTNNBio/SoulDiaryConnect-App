@@ -45,7 +45,7 @@ export default function PatientsList({ patients, onPatientPress }: PatientsListP
           {/* Info Patient */}
           <View style={styles.patientInfo}>
             <Text style={styles.patientName}>{patient.name}</Text>
-            <Text style={styles.lastUpdate}>Ultimo diario: {patient.lastUpdate}</Text>
+            {/* <Text style={styles.lastUpdate}>Ultimo diario: {patient.lastUpdate}</Text> */}
           </View>
 
           {/* New Messages */}

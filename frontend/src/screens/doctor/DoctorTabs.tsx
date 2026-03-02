@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // <-- Aggiunto
 import { Colors } from '../../constants/Colors';
 import DoctorListPatientsScreen from './tabs/DoctorListPatientsScreen';
 import DoctorProfileScreen from './tabs/DoctorProfileScreen';
@@ -10,14 +10,17 @@ import DoctorParametersScreen from './tabs/DoctorParametersScreen';
 const Tab = createBottomTabNavigator();
 
 export default function DoctorTabs() {
+  const insets = useSafeAreaInsets(); // <-- Calcolo dinamico dello spazio
+
   return (
     <Tab.Navigator
       initialRouteName="Pazienti" 
       screenOptions={({ route }) => ({
         headerShown: false,
         tabBarStyle: {
-          height: Platform.OS === 'ios' ? 90 : 70,
-          paddingBottom: Platform.OS === 'ios' ? 30 : 10,
+          // Altezza base dinamica che si adatta a iOS e Android
+          height: 65 + insets.bottom, 
+          paddingBottom: insets.bottom > 0 ? insets.bottom + 5 : 10,
           paddingTop: 10,
           backgroundColor: Colors.white,
           borderTopWidth: 0,
@@ -27,11 +30,17 @@ export default function DoctorTabs() {
           shadowOpacity: 0.1,
           shadowRadius: 4,
         },
+        // Centratura perfetta di icona e testo
+        tabBarItemStyle: {
+          justifyContent: 'center', 
+          alignItems: 'center',     
+        },
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textGray,
         tabBarLabelStyle: {
           fontSize: 12,
           fontWeight: '500',
+          marginTop: 4, // Piccolo respiro tra icona e testo
         },
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'help';
@@ -42,7 +51,8 @@ export default function DoctorTabs() {
           } else if (route.name === 'Parametri') {
             iconName = focused ? 'cog' : 'cog-outline';
           }
-          return <Ionicons name={iconName} size={size} color={color} />;
+          // Ingrandiamo leggermente le icone per coerenza con il layout del paziente
+          return <Ionicons name={iconName} size={size + 2} color={color} />;
         },
       })}
     >

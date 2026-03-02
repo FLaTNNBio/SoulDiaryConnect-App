@@ -13,7 +13,10 @@ urlpatterns = [
     path('doctor/patients/<str:codice_fiscale>/', views.get_patient_details, name='doctor_details_patient'),
     path('doctor/patients/<str:codice_fiscale>/notes/', views.get_patient_notes, name='get_patient_notes'),
     path('doctor/patients/<str:codice_fiscale>/notes/<int:note_id>/', views.get_pat_note_details, name='get_patient_note_details'),
+    path('doctor/patients/<str:paziente_id>/summary/', views.get_or_generate_clinical_summary, name='get_or_generate_clinical_summary'),
     path('doctor/notes/<int:note_id>/comment/', views.add_clinical_comment, name='add_clinical_comment'),
+    path('doctor/notes/<int:note_id>/regenerate-analysis/', views.regenerate_clinical_analysis, name='regenerate_clinical_analysis'),
+    
     
     path('patient/note/create/', views.create_nota, name='create_note'),
     path('patient/note/', views.get_note, name='get_note'),

@@ -144,14 +144,6 @@ def controlla_stato_generazione(request, nota_id):
     except NotaDiario.DoesNotExist:
         return JsonResponse({'error': 'Nota non trovata'}, status=404)
 
-def modifica_testo_medico(request, nota_id):
-    if request.method == 'POST':
-        nota = get_object_or_404(NotaDiario, id=nota_id)
-        testo_medico = request.POST.get('testo_medico', '').strip()
-        nota.testo_medico = testo_medico
-        nota.save()
-        return redirect(f'/medico/home/?paziente_id={nota.paz.codice_fiscale}')
-
 def personalizza_generazione(request):
     if request.session.get('user_type') != 'medico':
         return redirect('/login/')
@@ -185,30 +177,6 @@ def personalizza_generazione(request):
         'medico': medico,
         'tipo_parametri': zip(tipo_parametri, testo_parametri),
     })
-
-def rigenera_frase_clinica(request):
-    """
-    View per rigenerare la frase clinica di una nota specifica (AJAX).
-    """
-    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
-    if request.method == 'POST' and is_ajax:
-        nota_id = request.POST.get('nota_id')
-        if not nota_id:
-            return JsonResponse({'error': 'ID nota mancante.'}, status=400)
-        try:
-            nota = NotaDiario.objects.get(id=nota_id)
-            medico = nota.paz.med
-            paziente = nota.paz
-            testo_paziente = nota.testo_paziente
-            # Passa nota_id per escludere la nota corrente dal contesto
-            nuova_frase = genera_frasi_cliniche(testo_paziente, medico, paziente, nota_id=nota.id)
-            # Sostituisci la frase clinica precedente
-            nota.testo_clinico = nuova_frase
-            nota.save(update_fields=["testo_clinico"])
-            return JsonResponse({'testo_clinico': nuova_frase})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    return JsonResponse({'error': 'Richiesta non valida.'}, status=400)
 
 def genera_frase_supporto_nota(request, nota_id):
     """

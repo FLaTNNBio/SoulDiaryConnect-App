@@ -1,33 +1,79 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   View, 
   Text, 
   StyleSheet, 
-  ScrollView 
+  ScrollView,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 import { commonStyles } from '../../../../../styles/CommonStyles';
 import { Colors } from '../../../../../constants/Colors';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import Footer from '../../../../../components/Footer';
 import AuthButton from '../../../../../components/buttons/AuthButton';
-// 1. IMPORTA IL COMPONENTE CHIP
 import Chip from '../../../../../components/buttons/Chip'; 
+import { useDoctor } from '../../../../../hooks/useDoctor';
 
 export default function SummaryScreen() {
-  const [selectedPeriod, setSelectedPeriod] = useState('7_days');
+  const route = useRoute<any>();
+  const { patientId } = route.params;
 
-  const lastGeneration = {
-    date: '20 Feb 2026',
-    time: '14:30',
-    periodLabel: 'Ultimi 7 giorni'
-  };
+  const { clinicalSummary, fetchClinicalSummary, loading } = useDoctor();
+  
+  // Questo stato serve SOLO per decidere che periodo usare per la PROSSIMA generazione
+  const [selectedPeriod, setSelectedPeriod] = useState('7days');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const periods = [
-    { id: '7_days', label: 'Ultimi 7 giorni', emoji: '' },
-    { id: '1_month', label: 'Ultimo mese', emoji: '' },
-    { id: '3_months', label: 'Ultimi 3 mesi', emoji: '' },
-    { id: '1_year', label: 'Ultimo anno', emoji: '' },
+    { id: '7days', label: 'Ultimi 7 giorni', emoji: '' },
+    { id: '30days', label: 'Ultimo mese', emoji: '' },
+    { id: '3months', label: 'Ultimi 3 mesi', emoji: '' },
+    { id: 'year', label: 'Ultimo anno', emoji: '' },
   ];
+
+  // Carica il riassunto all'avvio (di default prova a prendere quello degli ultimi 7 giorni)
+  // Nota: l'array delle dipendenze NON include 'selectedPeriod', quindi non si ricarica se cambi chip
+  useEffect(() => {
+    if (patientId) {
+      // Al primo avvio, controlla se c'è un riassunto recente
+      fetchClinicalSummary(patientId, '7days', false);
+    }
+  }, [patientId, fetchClinicalSummary]);
+
+  // Forza la generazione di un nuovo riassunto con l'IA basandosi sul chip selezionato
+  const handleGenerateNew = async () => {
+    if (isGenerating) return;
+
+    setIsGenerating(true);
+    // Usa il selectedPeriod scelto dall'utente
+    const result = await fetchClinicalSummary(patientId, selectedPeriod, true);
+    setIsGenerating(false);
+
+    if (result) {
+      Alert.alert("Successo ✨", `Il riassunto clinico per il periodo '${result.periodo_label}' è stato generato.`);
+    } else {
+      Alert.alert("Errore", "Impossibile generare il riassunto in questo momento.");
+    }
+  };
+
+  // Funzione magica per trasformare **testo** in testo in grassetto
+  const formatTestoIA = (text: string) => {
+    if (!text) return null;
+    
+    // Divide il testo usando '**' come forbice
+    const parti = text.split('**');
+    
+    return parti.map((parte, index) => {
+      // Le parti dispari (1, 3, 5...) sono quelle che stavano in mezzo agli asterischi!
+      if (index % 2 !== 0) {
+        return <Text key={index} style={{ fontWeight: 'bold', color: Colors.textDark }}>{parte}</Text>;
+      }
+      // Le parti pari (0, 2, 4...) sono testo normale
+      return <Text key={index}>{parte}</Text>;
+    });
+  };
 
   return (
     <ScrollView 
@@ -53,17 +99,20 @@ export default function SummaryScreen() {
           <View style={styles.generationInfo}>
              <Text style={styles.lastGenLabel}>Ultima generazione</Text>
              <Text style={styles.lastGenDate}>
-                {lastGeneration.date} • {lastGeneration.time} ({lastGeneration.periodLabel})
+                {clinicalSummary?.data_generazione 
+                    ? `${clinicalSummary.data_generazione} (${clinicalSummary.periodo_label})`
+                    : "Nessun riassunto salvato"
+                }
              </Text>
           </View>
         </View>
       </View>
 
-      <View style={[commonStyles.page_left, { marginTop: 10 }]}>
+      <View style={[commonStyles.page_left, { marginTop: 10, paddingHorizontal: 15 }]}>
         
         {/* --- FORM --- */}
         <View style={styles.formSection}>
-          <Text style={styles.sectionLabel}>Seleziona intervallo temporale</Text>
+          <Text style={styles.sectionLabel}>Genera per il periodo:</Text>
           
           <View style={styles.chipsContainer}>
             {periods.map((period) => (
@@ -81,10 +130,10 @@ export default function SummaryScreen() {
           {/* --- BUTTON --- */}
           <View style={styles.buttonWrapper}>
             <AuthButton 
-              title="Genera Nuovo Riassunto" 
-              onPress={() => {}} 
+              title={isGenerating ? "Sto analizzando le note..." : "Genera Nuovo Riassunto"} 
+              onPress={handleGenerateNew} 
               iconFamily="material" 
-              iconName="auto-fix" 
+              iconName={isGenerating ? "autorenew" : "auto-fix"} 
               variant="primary"
             />
           </View>
@@ -96,14 +145,21 @@ export default function SummaryScreen() {
            <Text style={styles.resultTitle}>Risultato Analisi</Text>
         </View>
 
-        <View style={commonStyles.border_card}>
-          <Text style={styles.summaryText}>
-            Il paziente Mario Rossi mostra un quadro clinico in progressivo miglioramento. 
-            Dall'analisi del periodo selezionato, si evince una riduzione dei picchi d'ansia del 30% grazie alla 
-            costanza negli esercizi di respirazione. 
-            La qualità del sonno risulta stabile, con un incremento della vitalità nelle ore pomeridiane.
-          </Text>
-        </View>
+        {/* Mostra il caricamento visivo SOLO quando stiamo comunicando col backend */}
+        {loading && !isGenerating && !clinicalSummary?.testo_riassunto ? (
+            <View style={{ padding: 30, alignItems: 'center' }}>
+                <ActivityIndicator size="large" color={Colors.primary} />
+                <Text style={{ marginTop: 10, color: Colors.grey }}>Recupero dati in corso...</Text>
+            </View>
+        ) : (
+            <View style={commonStyles.border_card}>
+                <Text style={[styles.summaryText, !clinicalSummary?.testo_riassunto && { fontStyle: 'italic', color: Colors.grey }]}>
+                    {clinicalSummary?.testo_riassunto 
+                        ? formatTestoIA(clinicalSummary.testo_riassunto) 
+                        : "Seleziona un periodo e premi 'Genera Nuovo Riassunto' per avviare l'analisi."}
+                </Text>
+            </View>
+        )}
 
       </View>
       

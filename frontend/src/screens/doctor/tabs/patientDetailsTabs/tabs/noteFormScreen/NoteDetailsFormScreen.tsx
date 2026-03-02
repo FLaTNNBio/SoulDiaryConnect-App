@@ -39,8 +39,11 @@ export default function NoteDetailsFormScreen() {
         loading, 
         error, 
         fetchNoteDetails,
-        addClinicalComment 
+        addClinicalComment,
+        regenerateClinicalAnalysis 
     } = useDoctor();
+
+    const [isRegenerating, setIsRegenerating] = useState(false);
 
     // Caricamento dati reali all'avvio
     useEffect(() => {
@@ -66,9 +69,18 @@ export default function NoteDetailsFormScreen() {
         }
     };
 
-    const handleRegenerateAnalysis = () => {
-        console.log("Richiesta rigenerazione analisi clinica per nota:", noteId);
-        // TODO: Implementare regenerateClinicalAnalysis nell'hook useDoctor
+    const handleRegenerateAnalysis = async () => {
+        if (isRegenerating) return; // Evita doppi click
+        
+        setIsRegenerating(true);
+        const success = await regenerateClinicalAnalysis(noteId);
+        setIsRegenerating(false);
+
+        if (success) {
+            Alert.alert("Successo ✨", "La valutazione clinica è stata rigenerata dall'IA.");
+        } else {
+            Alert.alert("Errore", "Non è stato possibile rigenerare l'analisi.");
+        }
     };
 
     if (loading && !selectedNote) {
@@ -166,10 +178,10 @@ export default function NoteDetailsFormScreen() {
                                         
                                         <View style={styles.regenerateButtonWrapper}>
                                             <AuthButton 
-                                                title='Rigenera analisi clinica' 
+                                                title={isRegenerating ? 'Sto rigenerando...' : 'Rigenera analisi clinica'} 
                                                 onPress={handleRegenerateAnalysis}
                                                 variant='outline' 
-                                                iconName='refresh-outline'
+                                                iconName={isRegenerating ? 'hourglass-outline' : 'refresh-outline'}
                                                 iconFamily='ionicons' 
                                             />
                                         </View>

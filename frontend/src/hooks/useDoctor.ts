@@ -13,6 +13,7 @@ export const useDoctor = () => {
     const [patientNotes, setPatientNotes] = useState<any[]>([]);
     const [selectedNote, setSelectedNote] = useState<any>(null);
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
+    const [clinicalSummary, setClinicalSummary] = useState<any>(null);
 
     // 1. Doctor profile
     const fetchProfile = useCallback(async () => {
@@ -143,6 +144,68 @@ export const useDoctor = () => {
         }
     }, []);
 
+    // 7. Generate summary
+    const fetchClinicalSummary = useCallback(async (
+        patientId: string, 
+        periodo: string = '7days', 
+        forceGenerate: boolean = false
+    ) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            
+            const endpoint = `${API_URL}/doctor/patients/${patientId}/summary/?periodo=${periodo}&genera=${forceGenerate ? '1' : '0'}`;
+
+            const response = await axios.get(endpoint, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.data.status === 'success') {
+                setClinicalSummary(response.data.data);
+                return response.data.data; // Utile se vuoi gestire la risposta direttamente nel componente
+            }
+            return null;
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Errore nel caricamento del riassunto clinico");
+            return null;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // 8. Clinical Analysis
+    const regenerateClinicalAnalysis = useCallback(async (noteId: number) => {
+        setLoading(true);
+        setError(null);
+        try {
+            const token = await SecureStore.getItemAsync('userToken');
+            const response = await axios.post(
+                `${API_URL}/doctor/notes/${noteId}/regenerate-analysis/`,
+                {}, // Nessun body necessario, basta l'ID nell'URL
+                { headers: { Authorization: `Bearer ${token}` } }
+            );
+
+            if (response.data.status === 'success') {
+                // Aggiorniamo la UI con il nuovo testo
+                setSelectedNote((prevNote: any) => {
+                    if (!prevNote) return prevNote;
+                    return {
+                        ...prevNote,
+                        testo_clinico: response.data.data.testo_clinico
+                    };
+                });
+                return true;
+            }
+            return false;
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Errore durante la rigenerazione");
+            return false;
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
     return {
         loading,
         error,
@@ -156,6 +219,9 @@ export const useDoctor = () => {
         fetchPatients,
         selectedNote,
         fetchNoteDetails,
-        addClinicalComment
+        addClinicalComment,
+        regenerateClinicalAnalysis,
+        fetchClinicalSummary,
+        clinicalSummary
     };
 };

@@ -461,12 +461,19 @@ def genera_frasi_cliniche(testo, medico, paziente, nota_id=None):
         lunghezza_nota = medico.lunghezza_nota  # True per "lungo", False per "breve"
         tipo_parametri = medico.tipo_parametri.split(".:;!") if medico.tipo_parametri else []
         testo_parametri = medico.testo_parametri.split(".:;!") if medico.testo_parametri else []
+        print("GENERA FRASI CLINICHE")
+        print(f"\nTipo Nota: {tipo_nota}")
+        print(f"\nLunghezza nota: {lunghezza_nota}")
+        print(f"\nTipo parametri: {tipo_parametri}")
+        print(f"\nTesto parametri: {testo_parametri}")
 
         # Determina la lunghezza massima in caratteri
         max_chars = LUNGHEZZA_NOTA_LUNGA if lunghezza_nota else LUNGHEZZA_NOTA_BREVE
+        print(f"\nMax chars: {max_chars}")
 
         # Recupera il contesto delle note precedenti (esclusa quella corrente)
         contesto_precedente = _recupera_contesto_note_precedenti(paziente, limite=5, escludi_nota_id=nota_id)
+        print(f"\nContesto prec: {contesto_precedente}")
 
         if tipo_nota:
             # Nota strutturata
@@ -488,6 +495,7 @@ def genera_frasi_cliniche(testo, medico, paziente, nota_id=None):
                 # Non Strutturata + Breve
                 prompt = _genera_prompt_non_strutturato_breve(testo, max_chars, contesto_precedente, paziente)
 
+        print(f"\nPrompt:\n{prompt }")
         return genera_con_ollama(prompt, max_chars=max_chars, temperature=0.6)
 
     except Exception as e:

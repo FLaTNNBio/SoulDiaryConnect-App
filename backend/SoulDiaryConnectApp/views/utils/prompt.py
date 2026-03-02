@@ -227,6 +227,7 @@ def get_prompt_non_strutturato_breve(paziente, contesto_precedente, testo, max_c
     
     Testo da analizzare (QUESTO È IL FOCUS):
     {testo}"""
+    return prompt
 
 
 def get_prompt_non_strutturato_lungo(paziente, contesto_precedente, testo, max_chars):
@@ -288,6 +289,7 @@ def get_prompt_non_strutturato_lungo(paziente, contesto_precedente, testo, max_c
     
     Testo da analizzare in profondità (QUESTO È IL FOCUS PRINCIPALE):
     {testo}"""
+    return prompt
 
 
 def get_prompt_strutturato_breve(paziente, contesto_precedente, testo, max_chars, parametri_strutturati, tipo_parametri):
@@ -356,6 +358,7 @@ def get_prompt_strutturato_breve(paziente, contesto_precedente, testo, max_chars
     
     Ora analizza questo testo (FOCALIZZATI SU QUESTO):
     {testo}"""
+    return prompt
 
 
 def get_prompt_strutturato_lungo(paziente, contesto_precedente, testo, max_chars, parametri_strutturati, tipo_parametri):
@@ -426,3 +429,31 @@ def get_prompt_strutturato_lungo(paziente, contesto_precedente, testo, max_chars
     
     Ora analizza questo testo in profondità (QUESTO È IL FOCUS PRINCIPALE):
     {testo}"""
+    return prompt
+
+
+def get_summary_prompt(paziente, periodo_label, note_periodo, contesto_note):
+    prompt = f"""Sei uno psicologo clinico esperto. Il tuo compito è generare un riassunto clinico professionale dello stato del paziente basandoti sulle note del diario raccolte nel periodo specificato.
+
+        INFORMAZIONI PAZIENTE:
+        Nome: {paziente.nome} {paziente.cognome}
+        Periodo analizzato: {periodo_label}
+        Numero di note: {note_periodo.count()}
+        
+        NOTE DEL DIARIO:
+        {contesto_note}
+        
+        ISTRUZIONI:
+        1. Fornisci un riassunto clinico strutturato che includa:
+            - Panoramica generale dello stato emotivo nel periodo
+            - Pattern emotivi ricorrenti identificati
+            - Eventuali miglioramenti o peggioramenti osservati
+            - Aree di attenzione o preoccupazione
+            - Raccomandazioni per il follow-up
+        
+        2. Usa un linguaggio professionale e clinico
+        3. Sii obiettivo e basati solo sui dati forniti
+        4. Evidenzia eventuali trend significativi
+        
+        Genera il riassunto clinico:"""
+    return prompt
