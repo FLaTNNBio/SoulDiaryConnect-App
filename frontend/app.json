@@ -29,7 +29,16 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-font",
+      "expo-build-properties",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Consenti a SoulDiaryConnect di usare il microfono per dettare le note.",
+          "speechRecognitionPermission": "Consenti a SoulDiaryConnect di convertire la tua voce in testo."
+        }
+      ]
     ],
     "extra": {
       "eas": {

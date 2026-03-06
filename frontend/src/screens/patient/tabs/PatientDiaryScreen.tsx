@@ -4,7 +4,8 @@ import {
     Text, 
     ScrollView,
     StyleSheet,
-    Alert
+    Alert,
+    Keyboard
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,28 +18,95 @@ import Navbar from '../../../components/nav/Navbar';
 import Ionicons from '@expo/vector-icons/build/Ionicons';
 import NotesList from '../../../components/notes/NotesList';
 
+// Import della nuova libreria vocale moderna
+import { ExpoSpeechRecognitionModule, useSpeechRecognitionEvent } from 'expo-speech-recognition';
+
 // Importa l'hook personalizzato per le chiamate API
 import { usePatient } from '../../../hooks/usePatient';
 
 export default function PatientDiaryScreen() {
     const navigation = useNavigation<any>();
-    const isFocused = useIsFocused(); // Utile per ricaricare i dati quando l'utente torna su questa tab
+    const isFocused = useIsFocused();
      
-    // Stati locali per il form
+    // Stati locali
     const [noteText, setNoteText] = useState('');
     const [isAiSupportEnabled, setIsAiSupportEnabled] = useState(false);
+    const [isListening, setIsListening] = useState(false);
 
-    // Estrae funzioni e stati dal nostro hook aggiornato
+    // Estrae funzioni e stati dal nostro hook
     const { createNote, fetchNotes, notes, loading } = usePatient();
 
-    // Al caricamento della schermata, fetchiamo le note dal server
+    // Fetch delle note all'apertura della pagina
     useEffect(() => {
         if (isFocused) {
             fetchNotes();
         }
     }, [isFocused, fetchNotes]);
 
-    // Funzione utility per mappare le note grezze del DB nel formato grafico richiesto da NotesList
+    // ==========================================
+    // GESTIONE EVENTI VOCALI
+    // ==========================================
+    
+    useSpeechRecognitionEvent('start', () => setIsListening(true));
+    
+    useSpeechRecognitionEvent('end', () => setIsListening(false));
+    
+    useSpeechRecognitionEvent('error', (event) => {
+        setIsListening(false);
+        // Ignoriamo silenziosamente l'errore "no-speech" dovuto ai cali di focus
+        if (event.error !== 'no-speech') {
+            console.log("Errore vocale:", event.error);
+            Alert.alert("Errore", "Non sono riuscito a capire, riprova.");
+        }
+    });
+
+    useSpeechRecognitionEvent('result', (event) => {
+        // Estrapoliamo il testo capito da Android
+        const transcript = event.results[0]?.transcript;
+        if (transcript) {
+            // Lo uniamo al testo che c'è già, aggiungendo uno spazio se serve
+            setNoteText((prevText) => {
+                const separator = prevText.length > 0 ? " " : "";
+                return prevText + separator + transcript;
+            });
+        }
+    });
+
+    const handleVoiceInput = async () => {
+        try {
+            if (isListening) {
+                // Se sta già ascoltando, lo fermiamo
+                ExpoSpeechRecognitionModule.stop();
+                return;
+            }
+
+            // Chiediamo i permessi nativi al telefono
+            const { status } = await ExpoSpeechRecognitionModule.requestPermissionsAsync();
+            
+            if (status !== 'granted') {
+                Alert.alert("Permesso negato", "Devi autorizzare il microfono per poter dettare le note.");
+                return;
+            }
+
+            // Chiudiamo forzatamente la tastiera per evitare sbalzi di UI
+            Keyboard.dismiss();
+
+            // Il trucco magico: aspettiamo 200ms prima di attivare il microfono
+            setTimeout(() => {
+                ExpoSpeechRecognitionModule.start({
+                    lang: 'it-IT',
+                    interimResults: false, // Aspetta che la persona finisca la frase
+                });
+            }, 200);
+            
+        } catch (error) {
+            console.error("Errore avvio microfono:", error);
+            Alert.alert("Errore", "Impossibile avviare il microfono.");
+            setIsListening(false);
+        }
+    };
+    // ==========================================
+
     const formatNotesForUI = (apiNotes: any[]) => {
         const mesi = ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC'];
         
@@ -60,7 +128,6 @@ export default function PatientDiaryScreen() {
 
     const displayNotes = formatNotesForUI(notes);
 
-    // Gestione del salvataggio della nota
     const handleSaveNote = async () => {
         if (noteText.trim() === '') {
             Alert.alert("Attenzione", "La nota non può essere vuota.");
@@ -69,23 +136,13 @@ export default function PatientDiaryScreen() {
         
         try {
             await createNote(noteText, isAiSupportEnabled);
-            
             Alert.alert("Salvato", "La tua nota è stata aggiunta al diario.");
-            
-            // Resetta il form
             setNoteText('');
             setIsAiSupportEnabled(false);
-            
-            // RICARICA LA LISTA DELLE NOTE PER MOSTRARE QUELLA APPENA INSERITA
             fetchNotes();
-            
         } catch (error: any) {
             Alert.alert("Errore", error.message || "Impossibile salvare la nota. Riprova più tardi.");
         }
-    };
-
-    const handleVoiceInput = () => {
-        Alert.alert("Dettatura", "Funzionalità di dettatura vocale in arrivo.");
     };
 
     const handleNotePress = (id: number | string) => {
@@ -104,13 +161,11 @@ export default function PatientDiaryScreen() {
                 >
                     <View style={[commonStyles.page_left]}>
                         
-                        {/* --- HEADER SEZIONE INSERIMENTO --- */}
                         <View style={styles.sectionHeaderContainer}>
                             <Ionicons name="pencil" size={20} color={Colors.primary} />
                             <Text style={styles.sectionTitle}>Come ti senti oggi?</Text>
                         </View>
 
-                        {/* --- FORM DI INSERIMENTO --- */}
                         <NoteForm 
                             noteText={noteText}
                             setNoteText={setNoteText}
@@ -119,15 +174,18 @@ export default function PatientDiaryScreen() {
                             onSave={handleSaveNote}
                             onVoiceInput={handleVoiceInput}
                             loading={loading}
+                            isListening={isListening} 
                         />
+                        
+                        {isListening && (
+                            <Text style={styles.listeningText}>In ascolto... Parla ora</Text>
+                        )}
 
-                        {/* --- HEADER SEZIONE DIARIO STORICO --- */}
                         <View style={styles.sectionHeaderContainer}>
                             <Ionicons name="document" size={20} color={Colors.primary} />
                             <Text style={styles.sectionTitle}>Il mio diario</Text>
                         </View>
 
-                        {/* --- LISTA DELLE NOTE DINAMICA --- */}
                         {notes.length === 0 && !loading ? (
                             <Text style={styles.emptyText}>Non hai ancora scritto nessuna nota. Inizia a tenere traccia delle tue giornate!</Text>
                         ) : (
@@ -165,5 +223,12 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 20,
         marginBottom: 40
+    },
+    listeningText: {
+        color: 'red',
+        textAlign: 'center',
+        fontWeight: 'bold',
+        marginBottom: 10,
+        marginTop: -10
     }
 });

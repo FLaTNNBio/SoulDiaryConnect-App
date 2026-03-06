@@ -7,7 +7,7 @@ import {
   StyleSheet 
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors'; // Assicurati che il path sia corretto
+import { Colors } from '../../constants/Colors'; // Controlla che il path sia corretto
 import AuthButton from '../buttons/AuthButton';
 
 interface NoteFormProps {
@@ -17,7 +17,8 @@ interface NoteFormProps {
   setIsAiSupportEnabled: (enabled: boolean) => void;
   onSave: () => void;
   onVoiceInput: () => void;
-  loading: boolean; // Flag per lo stato di caricamento dal backend
+  loading: boolean;
+  isListening?: boolean; // Prop opzionale per gestire la UI del microfono
 }
 
 const NoteForm = ({ 
@@ -27,7 +28,8 @@ const NoteForm = ({
   setIsAiSupportEnabled, 
   onSave, 
   onVoiceInput,
-  loading 
+  loading,
+  isListening = false 
 }: NoteFormProps) => {
 
   return (
@@ -36,13 +38,13 @@ const NoteForm = ({
       {/* AREA DI TESTO DELLA NOTA */}
       <View style={styles.inputWrapper}>
         <TextInput
-          style={[styles.textInput, loading && styles.textInputDisabled]} // Opacità ridotta se in caricamento
+          style={[styles.textInput, loading && styles.textInputDisabled]}
           placeholder="Scrivi qui come ti senti..."
           placeholderTextColor="#999"
           multiline={true}
           value={noteText}
           onChangeText={setNoteText}
-          editable={!loading} // Blocca la tastiera durante il salvataggio
+          editable={!loading} 
         />
         
         {/* Pulsante Microfono (Dettatura) */}
@@ -50,16 +52,20 @@ const NoteForm = ({
           style={styles.micButton} 
           onPress={onVoiceInput}
           activeOpacity={0.8}
-          disabled={loading} // Disabilita click durante salvataggio
+          disabled={loading} 
         >
-          <Ionicons name="mic" size={22} color={loading ? Colors.grey : Colors.primary} />
+          <Ionicons 
+            name={isListening ? "mic" : "mic-outline"} 
+            size={22} 
+            color={loading ? Colors.grey : (isListening ? 'red' : Colors.primary)} 
+          />
         </TouchableOpacity>
       </View>
 
       {/* CHECKBOX SUPPORTO AI */}
       <TouchableOpacity 
         style={styles.checkboxContainer}
-        onPress={() => !loading && setIsAiSupportEnabled(!isAiSupportEnabled)} // Cambia stato solo se non sta caricando
+        onPress={() => !loading && setIsAiSupportEnabled(!isAiSupportEnabled)} 
         activeOpacity={0.8}
         disabled={loading}
       >
@@ -74,7 +80,6 @@ const NoteForm = ({
       </TouchableOpacity>
       
       {/* PULSANTE DI SALVATAGGIO */}
-      {/* Passiamo il testo "Salvataggio..." se loading è true */}
       <AuthButton 
         title={loading ? "Salvataggio in corso..." : "Salva nota"} 
         onPress={onSave}
@@ -103,7 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.backgroundInput, 
     borderRadius: 16, 
     padding: 15, 
-    paddingRight: 50, // Spazio per il pulsante del microfono
+    paddingRight: 50, 
     borderWidth: 1, 
     borderColor: Colors.borderInput,
   },

@@ -84,10 +84,10 @@ export default function MoodContextCorrelation({ data }: MoodContextCorrelationP
 
       {/* --- LEGENDA COLORI --- */}
       <View style={styles.legendContainer}>
-        <LegendItem color="#66BB6A" label="Pos." />
-        <LegendItem color="#BA68C8" label="Neu." />
-        <LegendItem color="#FFCA28" label="Ans." />
-        <LegendItem color="#EF5350" label="Neg." />
+        <LegendItem color="#66BB6A" label="Positivo" />
+        <LegendItem color="#BA68C8" label="Neutro" />
+        <LegendItem color="#FFCA28" label="Ansioso" />
+        <LegendItem color="#EF5350" label="Negativo" />
       </View>
 
       {/* --- GRAFICO RAGGRUPPATO --- */}

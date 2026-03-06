@@ -58,3 +58,20 @@ ngrok http 8000
 eas login
 eas build:configure
 eas build -p android --profile preview
+
+# Generate apk dev
+eas login
+eas build:configure
+eas build -p android --profile development
+npx expo start --dev-client
+
+# Generate apk Android Studio prima volta
+npx expo prebuild --platform android --clean
+npx expo run:android
+
+Percorso apk:
+C:\Users\xmadm\Desktop\Projects\SoulDiaryConnectApp\frontend\android\app\build\outputs\apk\debug
+
+Poi:
+npx expo start --dev-client
+poi inquadra qr se serve
