@@ -1,0 +1,49 @@
+{
+  "expo": {
+    "name": "SoulDiaryConnect",
+    "slug": "frontend",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+      "package": "com.maaricad.frontend",
+      "usesCleartextTraffic": true
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-font",
+      "expo-build-properties",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Consenti a SoulDiaryConnect di usare il microfono per dettare le note.",
+          "speechRecognitionPermission": "Consenti a SoulDiaryConnect di convertire la tua voce in testo."
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "f6e26b4e-f351-4aed-9e6e-e31b5f10eb32"
+      }
+    }
+  }
+}

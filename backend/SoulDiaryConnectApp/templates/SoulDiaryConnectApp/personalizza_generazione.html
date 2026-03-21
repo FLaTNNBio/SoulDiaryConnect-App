@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+{%  load static %}
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Personalizza Generazione - SoulDiaryConnect</title>
+    <link rel="stylesheet" href="{% static 'SoulDiaryConnectApp/css/personalizza_generazione.css' %}">
+    <script>
+        function toggleParametriTable() {
+            const isStrutturato = document.querySelector('input[name="tipo_nota"]:checked').value === 'strutturato';
+            const parametriContainer = document.getElementById('parametriContainer');
+            const testoContainer = document.getElementById('testoContainer');
+
+            parametriContainer.classList.toggle('hidden', !isStrutturato);
+            testoContainer.classList.toggle('hidden', isStrutturato);
+        }
+
+        function aggiungiRiga() {
+            const container = document.querySelector('.parameters-table');
+            const row = document.createElement('div');
+            row.className = 'parameter-row';
+            row.innerHTML = `
+                <input type="text" name="tipo_parametri" placeholder="Es: Emozione, Consiglio...">
+                <textarea name="testo_parametri" rows="3" placeholder="Inserisci il testo del parametro..."></textarea>
+                <button type="button" class="remove-btn" onclick="rimuoviRiga(this)">Rimuovi</button>
+            `;
+            container.appendChild(row);
+        }
+
+        function rimuoviRiga(button) {
+            button.parentElement.remove();
+        }
+
+        window.onload = toggleParametriTable;
+    </script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="/media/2-01.png" alt="SoulDiaryConnect">
+            <h1>Personalizza Generazione</h1>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'medico_home' %}" class="back-btn">← Torna Indietro</a>
+            <a href="{% url 'logout' %}" class="logout-btn">
+                Logout
+                <img src="/media/logout_white.png" alt="">
+            </a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="settings-card">
+                <div class="settings-grid">
+                    <div class="setting-section">
+                        <h2>Tipo di analisi clinica</h2>
+
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="tipo_nota" value="strutturato" id="strutturato"
+                                       {% if medico.tipo_nota %}checked{% endif %} onchange="toggleParametriTable()">
+                                <span>Analisi Strutturata</span>
+                            </label>
+
+                            <label class="radio-option">
+                                <input type="radio" name="tipo_nota" value="non_strutturato" id="non_strutturato"
+                                       {% if medico.tipo_nota is not None and not medico.tipo_nota %}checked{% endif %}
+                                       onchange="toggleParametriTable()">
+                                <span>Analisi Non Strutturata</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="setting-section">
+                        <h2>Lunghezza dell'analisi clinica</h2>
+
+                        <div class="radio-group">
+                            <label class="radio-option">
+                                <input type="radio" name="lunghezza_nota" value="lungo" id="lungo"
+                                       {% if medico.lunghezza_nota %}checked{% endif %}>
+                                <span>Analisi Lunga</span>
+                            </label>
+
+                            <label class="radio-option">
+                                <input type="radio" name="lunghezza_nota" value="breve" id="breve"
+                                       {% if not medico.lunghezza_nota %}checked{% endif %}>
+                                <span>Analisi Breve</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="testoContainer" class="warning-box hidden">
+                    <h3>⚠️ Attenzione</h3>
+                    <p>Scegliendo l'opzione "Commento Non Strutturato", il commento generato potrebbe risultare meno affidabile e preciso rispetto alla versione strutturata.</p>
+                </div>
+
+                <div id="parametriContainer" class="parameters-section hidden">
+                    <h2>Parametri Personalizzati</h2>
+
+                    <div class="example-box">
+                        <h3>📋 Esempio di utilizzo</h3>
+                        <p>Rispondi in modo parametrizzato al seguente testo: "Today I failed my exam and feel like giving up."</p>
+                    </div>
+
+                    <div class="parameters-table">
+                        {% for tipo, testo in tipo_parametri %}
+                            <div class="parameter-row">
+                                <input type="text" name="tipo_parametri" value="{{ tipo }}" placeholder="Es: Emozione, Consiglio...">
+                                <textarea name="testo_parametri" rows="3" placeholder="Inserisci il testo del parametro...">{{ testo }}</textarea>
+                                <button type="button" class="remove-btn" onclick="rimuoviRiga(this)">Rimuovi</button>
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <button type="button" class="add-btn" onclick="aggiungiRiga()">+ Aggiungi Parametro</button>
+                </div>
+
+                <div class="submit-section">
+                    <button type="submit" class="submit-btn">Salva Configurazione</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.65rem; color: rgba(100, 116, 139, 0.5); background: transparent; z-index: 100;">
+        L'IA può commettere errori. Verifica sempre le informazioni ricevute.
+    </footer>
+</body>
+</html>

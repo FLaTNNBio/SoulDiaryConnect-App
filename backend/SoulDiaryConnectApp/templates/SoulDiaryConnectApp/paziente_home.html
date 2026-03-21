@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+{%  load static %}
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Paziente - SoulDiaryConnect</title>
+    <link rel="stylesheet" href="{% static 'SoulDiaryConnectApp/css/paziente_home.css' %}">
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="/media/2-01.png" alt="SoulDiaryConnect">
+            <h1>Benvenuto, {{ paziente.nome }} {{ paziente.cognome }}</h1>
+        </div>
+        <a href="{% url 'logout' %}" class="logout-btn">
+            Logout
+            <img src="/media/logout_white.png" alt="">
+        </a>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h2>
+                <img src="/media/stethoscope.png" alt="">
+                Il tuo medico
+            </h2>
+
+            <div class="doctor-card">
+                <p><strong>Nome:</strong> {{ medico.nome }} {{ medico.cognome }}</p>
+                <p><strong>Indirizzo:</strong> {{ medico.indirizzo_studio }}, {{ medico.numero_civico }} - {{ medico.citta }}</p>
+                <p><strong>Email:</strong> {{ medico.email }}</p>
+                <p><strong>Tel. Studio:</strong> {{ medico.numero_telefono_studio }}</p>
+                <p><strong>Tel. Cellulare:</strong> {{ medico.numero_telefono_cellulare }}</p>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="add-note-section">
+                <h2>Aggiungi una nuova nota</h2>
+                <form method="POST" id="addNoteForm" onsubmit="showLoadingModal()">
+                    {% csrf_token %}
+                    <div class="textarea-container">
+                        <textarea name="desc" id="notaTextarea" placeholder="Scrivi qui i tuoi pensieri o usa la dettatura vocale..." rows="8" required></textarea>
+                        <button type="button" id="voiceBtn" class="voice-btn" onclick="toggleVoiceRecording()" title="Dettatura vocale">
+                            <svg id="micIcon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                                <line x1="12" y1="19" x2="12" y2="23"></line>
+                                <line x1="8" y1="23" x2="16" y2="23"></line>
+                            </svg>
+                        </button>
+                    </div>
+                    <div id="recordingStatus" class="recording-status" style="display:none;">
+                        <span class="recording-pulse"></span>
+                        <span class="recording-text">🎤 Sto ascoltando...</span>
+                    </div>
+
+                    <div class="checkbox-group">
+                        <input type="checkbox" name="generateResponse" id="generateResponse">
+                        <label for="generateResponse">Genera automaticamente frasi di supporto</label>
+                    </div>
+
+                    <button type="submit" class="submit-btn">Salva Nota</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="notes-section">
+            <h2>
+                <img src="/media/writing.png" alt="">
+                Le tue note diario
+            </h2>
+
+            {% if note_diario %}
+                {% for nota in note_diario %}
+                    <div class="note-card">
+                        <p><strong>Data:</strong> {{ nota.data_nota|date:"d/m/Y" }} alle ore {{ nota.data_nota|date:"H:i" }}</p>
+                        <p><strong>Nota:</strong> {{ nota.testo_paziente }}</p>
+
+                        {% if nota.is_emergency and nota.messaggio_emergenza %}
+                            <div class="note-separator"></div>
+                            <div class="support-text">
+                                <p><strong>💙 Messaggio Importante:</strong></p>
+                                <p>{{ nota.messaggio_emergenza|safe }}</p>
+                            </div>
+                        {% elif nota.testo_supporto %}
+                            <div class="note-separator"></div>
+                            <div class="support-text">
+                                <p><strong>💙 Supporto:</strong> {{ nota.testo_supporto }}</p>
+                            </div>
+                        {% else %}
+                            {% if not nota.is_emergency %}
+                                <div class="note-separator"></div>
+                                <div class="generate-support-section">
+                                    <p style="color: #64748b; font-style: italic; margin-bottom: 12px;">
+                                        Questa nota non ha ancora una frase di supporto.
+                                    </p>
+                                    <form method="POST" action="{% url 'genera_frase_supporto_nota' nota.id %}" onsubmit="showGenerateSupportModal(event, this)">
+                                        {% csrf_token %}
+                                        <button type="submit" class="generate-support-btn">
+                                            <span>✨</span> Genera frase di supporto
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+
+                        {% if nota.testo_medico or nota.testo_medico == "None" %}
+                            <div class="note-separator"></div>
+                            <div class="doctor-comment">
+                                <p><strong>🩺 Cosa ne pensa il medico:</strong> {{ nota.testo_medico }}</p>
+                            </div>
+                        {% endif %}
+                        <button type="button" class="delete-btn"
+                                data-id="{{ nota.id }}"
+                                data-data="{{ nota.data_nota|date:'d/m/Y' }} alle ore {{ nota.data_nota|date:'H:i'|escapejs }}"
+                                data-nota="{{ nota.testo_paziente|escapejs }}"
+                                onclick="openDeleteModalFromButton(this)"
+                                style="background:#dc3545;color:white;border:none;padding:8px 16px;border-radius:8px;cursor:pointer;margin-top:10px;">
+                            Elimina
+                        </button>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <p>Non ci sono ancora note disponibili.</p>
+                    <p>Inizia a scrivere il tuo diario!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal di conferma eliminazione -->
+    <div id="deleteModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content">
+            <h2 style="color:#dc3545;">Conferma eliminazione</h2>
+            <p id="modalData"></p>
+            <p id="modalNota"></p>
+            <form method="POST" id="deleteForm">
+                {% csrf_token %}
+                <button type="submit" class="submit-btn" style="background:#dc3545;">Elimina definitivamente</button>
+                <button type="button" class="submit-btn" style="background:#6c757d;margin-left:12px;" onclick="closeDeleteModal()">Annulla</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal di caricamento -->
+    <div id="loadingModal" class="modal-overlay loading-modal" style="display:none;">
+        <div class="modal-content">
+            <div class="note-icon">📝</div>
+            <h2>Generazione nota in corso...</h2>
+            <p style="color: #475569; font-size: 15px;">Stiamo elaborando la tua nota</p>
+            <div class="loading-animation">
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal di trascrizione non supportata -->
+    <div id="transcriptionLoadingModal" class="modal-overlay loading-modal" style="display:none;">
+        <div class="modal-content">
+            <div class="note-icon">⚠️</div>
+            <h2>Browser non supportato</h2>
+            <p style="color: #475569; font-size: 15px;">La dettatura vocale funziona solo su Chrome o Edge</p>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================================
+        // TRASCRIZIONE VOCALE CON WEB SPEECH API
+        // ============================================================================
+
+        let recognition = null;
+        let isRecording = false;
+
+        // Inizializza Web Speech API
+        function initSpeechRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.continuous = true;
+                recognition.interimResults = true;
+                recognition.lang = 'it-IT';
+
+                recognition.onstart = function() {
+                    console.log('Dettatura avviata');
+                    isRecording = true;
+                    updateRecordingUI(true);
+                };
+
+                recognition.onresult = function(event) {
+                    let interimTranscript = '';
+                    let finalTranscript = '';
+
+                    for (let i = event.resultIndex; i < event.results.length; ++i) {
+                        if (event.results[i].isFinal) {
+                            finalTranscript += event.results[i][0].transcript + ' ';
+                        } else {
+                            interimTranscript += event.results[i][0].transcript;
+                        }
+                    }
+
+                    const textarea = document.getElementById('notaTextarea');
+                    const currentText = textarea.value;
+
+                    // Se ci sono risultati finali, aggiungili al testo
+                    if (finalTranscript) {
+                        const baseText = currentText.replace(/\[...\].*$/, '').trim();
+                        textarea.value = baseText + (baseText ? ' ' : '') + finalTranscript.trim();
+                    } else if (interimTranscript) {
+                        // Mostra la trascrizione provvisoria
+                        const baseText = currentText.replace(/\[...\].*$/, '').trim();
+                        textarea.value = baseText + (baseText ? ' ' : '') + '[...] ' + interimTranscript;
+                    }
+                };
+
+                recognition.onerror = function(event) {
+                    console.error('Errore riconoscimento vocale:', event.error);
+                    if (event.error === 'not-allowed') {
+                        alert('Permesso microfono negato. Abilita il microfono nelle impostazioni del browser.');
+                        isRecording = false;
+                        updateRecordingUI(false);
+                    }
+                };
+
+                recognition.onend = function() {
+                    if (isRecording) {
+                        // Riavvia se deve continuare
+                        try {
+                            recognition.start();
+                        } catch (e) {
+                            console.log('Recognition già attiva');
+                        }
+                    } else {
+                        updateRecordingUI(false);
+                        // Pulisci marcatori provvisori
+                        const textarea = document.getElementById('notaTextarea');
+                        textarea.value = textarea.value.replace(/\[...\].*$/, '').trim();
+                    }
+                };
+
+                return true;
+            }
+            return false;
+        }
+
+        function toggleVoiceRecording() {
+            if (!recognition) {
+                if (!initSpeechRecognition()) {
+                    alert('La dettatura vocale non è supportata dal tuo browser. Usa Chrome o Edge.');
+                    return;
+                }
+            }
+
+            if (isRecording) {
+                stopRecording();
+            } else {
+                startRecording();
+            }
+        }
+
+        function startRecording() {
+            if (recognition) {
+                try {
+                    recognition.start();
+                } catch (e) {
+                    console.error('Errore avvio:', e);
+                }
+            }
+        }
+
+        function stopRecording() {
+            isRecording = false;
+            if (recognition) {
+                recognition.stop();
+            }
+            updateRecordingUI(false);
+
+            // Pulisci marcatori provvisori
+            const textarea = document.getElementById('notaTextarea');
+            textarea.value = textarea.value.replace(/\[...\].*$/, '').trim();
+        }
+
+        function updateRecordingUI(recording) {
+            const voiceBtn = document.getElementById('voiceBtn');
+            const recordingStatus = document.getElementById('recordingStatus');
+
+            if (recording) {
+                voiceBtn.classList.add('recording');
+                recordingStatus.style.display = 'flex';
+            } else {
+                voiceBtn.classList.remove('recording');
+                recordingStatus.style.display = 'none';
+            }
+        }
+
+        // ============================================================================
+        // FUNZIONI ESISTENTI
+        // ============================================================================
+
+        function showLoadingModal() {
+            if (isRecording) {
+                stopRecording();
+            }
+            document.getElementById('loadingModal').style.display = 'flex';
+            return true;
+        }
+
+        function showGenerateSupportModal(event, form) {
+            event.preventDefault();
+            if (isRecording) {
+                stopRecording();
+            }
+            document.getElementById('loadingModal').style.display = 'flex';
+            form.submit();
+        }
+
+        function openDeleteModalFromButton(btn) {
+            var notaId = btn.getAttribute('data-id');
+            var dataNota = btn.getAttribute('data-data');
+            var testoNota = btn.getAttribute('data-nota');
+            openDeleteModal(notaId, dataNota, testoNota);
+        }
+
+        function openDeleteModal(notaId, dataNota, testoNota) {
+            document.getElementById('modalData').innerHTML = '<strong>Data:</strong> ' + dataNota;
+            document.getElementById('modalNota').innerHTML = '<strong>Nota:</strong> ' + testoNota;
+            var form = document.getElementById('deleteForm');
+            form.action = '/paziente/note/' + notaId + '/elimina/';
+            document.getElementById('deleteModal').style.display = 'flex';
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('deleteModal').style.display = 'none';
+        }
+    </script>
+
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.65rem; color: rgba(100, 116, 139, 0.5); background: transparent; z-index: 100;">
+        L'IA può commettere errori. Verifica sempre le informazioni ricevute.
+    </footer>
+</body>
+</html>

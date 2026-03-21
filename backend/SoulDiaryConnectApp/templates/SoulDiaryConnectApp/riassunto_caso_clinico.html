@@ -1,0 +1,190 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riassunto Caso Clinico - SoulDiaryConnect</title>
+    <link rel="stylesheet" href="{% static 'SoulDiaryConnectApp/css/riassunto_caso_clinico.css' %}">
+    <!-- Libreria per parsing Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <img src="/media/2-01.png" alt="SoulDiaryConnect">
+            <h1>Riassunto Caso Clinico - {{ paziente.nome }} {{ paziente.cognome }}</h1>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'medico_home' %}?paziente_id={{ paziente.codice_fiscale }}" class="back-btn">
+                ← Torna alle Note
+            </a>
+            <a href="{% url 'logout' %}" class="logout-btn">
+                Logout <img src="/media/logout_white.png" alt="">
+            </a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <!-- SIDEBAR CON INFO PAZIENTE -->
+        <div class="sidebar">
+            <div class="patient-info-card">
+                <h2>📋 Informazioni Paziente</h2>
+                <div class="info-item">
+                    <span class="info-label">Nome:</span>
+                    <span class="info-value">{{ paziente.nome }} {{ paziente.cognome }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Codice Fiscale:</span>
+                    <span class="info-value">{{ paziente.codice_fiscale }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Data di Nascita:</span>
+                    <span class="info-value">{{ paziente.data_di_nascita|date:"d/m/Y" }}</span>
+                </div>
+            </div>
+
+            <!-- SELEZIONE PERIODO -->
+            <div class="period-card">
+                <h2>📅 Seleziona Periodo</h2>
+                <form method="GET" action="" class="period-form">
+                    <input type="hidden" name="paziente_id" value="{{ paziente.codice_fiscale }}">
+
+                    <div class="period-options">
+                        <label class="period-option">
+                            <input type="radio" name="periodo" value="7days" {% if periodo == '7days' %}checked{% endif %}>
+                            <span class="period-label">Ultimi 7 giorni</span>
+                        </label>
+                        <label class="period-option">
+                            <input type="radio" name="periodo" value="30days" {% if periodo == '30days' %}checked{% endif %}>
+                            <span class="period-label">Ultimo mese</span>
+                        </label>
+                        <label class="period-option">
+                            <input type="radio" name="periodo" value="3months" {% if periodo == '3months' %}checked{% endif %}>
+                            <span class="period-label">Ultimi 3 mesi</span>
+                        </label>
+                        <label class="period-option">
+                            <input type="radio" name="periodo" value="year" {% if periodo == 'year' %}checked{% endif %}>
+                            <span class="period-label">Ultimo anno</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" class="update-btn">🔄 Aggiorna Periodo</button>
+                </form>
+            </div>
+
+            <!-- STATISTICHE PERIODO -->
+            <div class="stats-card">
+                <h2>📊 Statistiche Periodo</h2>
+                <div class="stat-item">
+                    <span class="stat-icon">📝</span>
+                    <div class="stat-content">
+                        <span class="stat-label">Note nel periodo</span>
+                        <span class="stat-value">{{ num_note }}</span>
+                    </div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-icon">📅</span>
+                    <div class="stat-content">
+                        <span class="stat-label">Periodo selezionato</span>
+                        <span class="stat-value">{{ periodo_label }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AREA RIASSUNTO -->
+        <div class="content-area">
+            <div class="riassunto-section">
+                <div class="section-header">
+                    <h2>📋 Riassunto Caso Clinico</h2>
+                    <a href="?paziente_id={{ paziente.codice_fiscale }}&periodo={{ periodo }}&genera=1" class="generate-btn" onclick="showLoadingModal(event)">
+                        🤖 Genera Riassunto
+                    </a>
+                </div>
+
+                {% if riassunto %}
+                    <div class="riassunto-content">
+                        <div class="riassunto-header">
+                            <span class="riassunto-badge">{{ periodo_label }}</span>
+                            <span class="riassunto-date">Generato il {{ data_generazione|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        <div id="riassunto-text" class="riassunto-text markdown-content">{{ riassunto }}</div>
+                    </div>
+                {% else %}
+                    <div class="empty-state">
+                        <div class="empty-icon">📝</div>
+                        <p>Seleziona un periodo e clicca su "Genera Riassunto" per ottenere un'analisi clinica del paziente.</p>
+                        <p class="empty-hint">Il riassunto verrà generato utilizzando tutte le note del paziente nel periodo selezionato.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- LISTA NOTE DEL PERIODO -->
+            {% if note_periodo %}
+                <div class="notes-preview-section">
+                    <h2>📝 Note del periodo scelto ({{ num_note }})</h2>
+                    <div class="notes-list">
+                        {% for nota in note_periodo %}
+                            <div class="note-preview" onclick="toggleNoteExpansion(this)">
+                                <div class="note-preview-header">
+                                    <span class="note-date">📅 {{ nota.data_nota|date:"d/m/Y" }}</span>
+                                    <div class="note-header-right">
+                                        {% if nota.emozione_predominante %}
+                                            <span class="note-emotion">{{ nota.emozione_predominante|capfirst }}</span>
+                                        {% endif %}
+                                        <span class="expand-icon">▼</span>
+                                    </div>
+                                </div>
+                                <p class="note-excerpt">{{ nota.testo_paziente|truncatewords:30 }}</p>
+                                <div class="note-full-content">
+                                    <p>{{ nota.testo_paziente|linebreaksbr }}</p>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Modal di caricamento -->
+    <div id="loadingModal" class="modal-overlay loading-modal" style="display:none;">
+        <div class="modal-content">
+            <div class="note-icon">📋</div>
+            <h2>Generazione riassunto in corso...</h2>
+            <p style="color: #475569; font-size: 15px;">Stiamo elaborando le note del paziente e generando il riassunto clinico</p>
+            <div class="loading-animation">
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+                <div class="loading-dot"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mostra il modal di caricamento
+        function showLoadingModal(event) {
+            document.getElementById('loadingModal').style.display = 'flex';
+            // Non blocchiamo il link, lasciamo che prosegua normalmente
+        }
+
+        // Renderizza markdown per il riassunto al caricamento
+        document.addEventListener('DOMContentLoaded', function() {
+            const riassuntoEl = document.getElementById('riassunto-text');
+            if (riassuntoEl) {
+                riassuntoEl.innerHTML = marked.parse(riassuntoEl.textContent || riassuntoEl.innerText);
+            }
+        });
+
+        // Funzione per espandere/collassare le note
+        function toggleNoteExpansion(noteElement) {
+            noteElement.classList.toggle('expanded');
+        }
+    </script>
+
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.65rem; color: rgba(100, 116, 139, 0.5); background: transparent; z-index: 100;">
+        L'IA può commettere errori. Verifica sempre le informazioni ricevute.
+    </footer>
+</body>
+</html>

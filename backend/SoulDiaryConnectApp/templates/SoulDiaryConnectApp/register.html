@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Registrazione - SoulDiaryConnect</title>
+    <link rel="stylesheet" href="{% static 'SoulDiaryConnectApp/css/register.css' %}">
+
+    <script>
+        function toggleFields() {
+            const userType = document.getElementById('user_type').value;
+            const commonFields = document.getElementById('common_fields');
+            const medicoFields = document.getElementById('medico_fields');
+            const pazienteFields = document.getElementById('paziente_fields');
+            const registra = document.getElementById('register_button');
+
+            registra.classList.toggle('hidden', !userType);
+            commonFields.classList.toggle('visible', !!userType);
+            medicoFields.classList.toggle('visible', userType === 'medico');
+            pazienteFields.classList.toggle('visible', userType === 'paziente');
+        }
+
+        function aggiornaCodiceMedico() {
+            const medicoSelect = document.getElementById('medico_select');
+            const medInput = document.getElementById('med');
+            medInput.value = medicoSelect.value;
+        }
+    </script>
+</head>
+
+<body>
+    <!-- Background video (same as Home) -->
+    <video class="background-video" autoplay loop muted playsinline>
+        <source src="/media/wallpaper.mp4" type="video/mp4">
+    </video>
+
+    <!-- Overlay -->
+    <div class="overlay"></div>
+
+    <!-- Only small logo back to Home -->
+    <header class="top-left">
+        <a class="home-logo" href="{% url 'home' %}" aria-label="Torna alla Home">
+            <img src="/media/2-01.png" alt="SoulDiaryConnect">
+        </a>
+    </header>
+
+    <div class="main-container">
+        <div class="register-card">
+            <div class="register-header">
+                <h1>Crea il tuo account</h1>
+                <p>Inizia il tuo viaggio con noi</p>
+            </div>
+
+            <form method="POST">
+                {% csrf_token %}
+
+                <div class="form-group">
+                    <label for="user_type">Tipo di utente</label>
+                    <select name="user_type" id="user_type" onchange="toggleFields()" required>
+                        <option value="">Seleziona il tipo di account</option>
+                        <option value="medico">Medico</option>
+                        <option value="paziente">Paziente</option>
+                    </select>
+                </div>
+
+                <div id="common_fields" class="form-section">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="nome">Nome</label>
+                            <input type="text" name="nome" id="nome" placeholder="Il tuo nome">
+                        </div>
+                        <div class="form-group">
+                            <label for="cognome">Cognome</label>
+                            <input type="text" name="cognome" id="cognome" placeholder="Il tuo cognome">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" name="email" id="email" placeholder="nome@esempio.com">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" name="password" id="password" placeholder="Crea una password sicura">
+                    </div>
+                </div>
+
+                <div id="medico_fields" class="form-section">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="indirizzo_studio">Indirizzo studio</label>
+                            <input type="text" name="indirizzo_studio" id="indirizzo_studio" placeholder="Via/Piazza">
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_civico">Numero civico</label>
+                            <input type="text" name="numero_civico" id="numero_civico" placeholder="N. civico">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="citta">Città</label>
+                        <input type="text" name="citta" id="citta" placeholder="Città dello studio">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="numero_telefono_studio">Tel. Studio</label>
+                            <input type="text" name="numero_telefono_studio" id="numero_telefono_studio" placeholder="Tel. studio">
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_telefono_cellulare">Tel. Cellulare</label>
+                            <input type="text" name="numero_telefono_cellulare" id="numero_telefono_cellulare" placeholder="Tel. cellulare">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="paziente_fields" class="form-section">
+                    <div class="form-group">
+                        <label for="codice_fiscale">Codice fiscale</label>
+                        <input type="text" name="codice_fiscale" id="codice_fiscale" placeholder="Codice fiscale">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="data_di_nascita">Data di nascita</label>
+                        <input type="date" name="data_di_nascita" id="data_di_nascita">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="medico_select">Medico di riferimento</label>
+                        <select name="medico_select" id="medico_select" onchange="aggiornaCodiceMedico()">
+                            <option value="">Seleziona un medico</option>
+                            {% for medico in medici %}
+                                <option value="{{ medico.codice_identificativo }}">{{ medico.nome }} {{ medico.cognome }} - {{ medico.codice_identificativo }}</option>
+                            {% endfor %}
+                        </select>
+                        <input type="hidden" name="med" id="med">
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn hidden" id="register_button">
+                    Registrati
+                    <img src="/media/register.png" alt="">
+                </button>
+            </form>
+
+            <div class="divider">oppure</div>
+
+            <div class="login-link">
+                Hai già un account? <a href="{% url 'login' %}">Accedi</a>
+            </div>
+        </div>
+    </div>
+
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.65rem; color: rgba(255, 255, 255, 0.4); background: transparent; z-index: 100;">
+        L'IA può commettere errori. Verifica sempre le informazioni ricevute.
+    </footer>
+</body>
+</html>

@@ -1,0 +1,77 @@
+################## Frontend ##################
+Download: Node.js, Expo Go app on smartphone
+
+Create frontend:
+npx create-expo-app@latest frontend --template blank-typescript
+
+Install frontend:
+cd .\frontend\
+npm install
+
+crea file Config.ts in .\costants e inserisci :
+export const API_URL = 'http://172.19.160.87:8000';
+[per ip avviare ipconfig in terminale e selezionare IPv4 da scheda Lan wireless]
+
+Run frontend:
+npx expo start
+Android: qrcode in app
+Ios: qrcode in camera
+
+
+
+################## Backend ##################
+cd .\backend\
+
+# Installa ambiente
+py -3.13 -m venv .venv
+.venv\Scripts\activate
+
+# Installa librerie
+pip install -r requirements.txt     [Prompt come amministratore]
+
+# DB
+in SoulDiaryConnect/settings.py                         [cambia password db]
+createdb -U postgres -h localhost souldiaryconnect      [Crea db SoulDiaryConnect]
+python manage.py dbshell                                [Entra in dbshell]
+\i souldiaryconnect.sql                                 [In prompt dbshell lancia questo comando]
+\q                                                      [Esci da db]
+python manage.py makemigrations                         [Elimina files in SoulDiaryConnectApp/migrations se da errore]
+python manage.py migrate
+
+**Ricorda**
+Aggiungere ALLOWED_HOSTS = ['*'] in backend/SouldDiaryConnect/settings.py
+
+# OLLAMA (In prompt)
+ollama pull llama3.1:8b
+ollama serve
+ollama list
+
+# To start server:
+python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
+
+# Ngrok
+ngrok config add-authtoken Tuo_token            (vedi Config.ts per token)
+ngrok http 8000
+
+# Generate apk
+eas login
+eas build:configure
+eas build -p android --profile preview
+
+# Generate apk dev
+eas login
+eas build:configure
+eas build -p android --profile development
+npx expo start --dev-client
+
+# Generate apk Android Studio prima volta
+npx expo prebuild --platform android --clean
+npx expo run:android
+
+Percorso apk:
+C:\Users\xmadm\Desktop\Projects\SoulDiaryConnectApp\frontend\android\app\build\outputs\apk\debug
+
+Poi:
+npx expo start --dev-client
+poi inquadra qr se serve

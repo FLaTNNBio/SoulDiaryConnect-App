@@ -1,0 +1,872 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #f0f4f8;
+    overflow: hidden;
+}
+
+/* HEADER blu/celeste */
+.header {
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    color: #fff;
+    padding: 20px 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, .1);
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 20px
+}
+
+.header img {
+    height: 60px
+}
+
+.header h1 {
+    font-size: 20px;
+    font-weight: 600
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px
+}
+
+.settings-btn, .logout-btn {
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all .3s ease;
+    padding: 10px 20px;
+    color: #fff;
+}
+
+.settings-btn {
+    background: rgba(255, 255, 255, .2)
+}
+
+.settings-btn:hover {
+    background: rgba(255, 255, 255, .3)
+}
+
+.logout-btn {
+    background: rgba(220, 53, 69, .9)
+}
+
+.logout-btn:hover {
+    background: rgba(200, 35, 51, 1)
+}
+
+.settings-btn img, .logout-btn img {
+    height: 16px
+}
+
+/* LAYOUT */
+.main-container {
+    display: flex;
+    height: calc(100vh - 85px);
+    margin-top: 85px;
+    gap: 24px;
+    padding: 24px;
+}
+
+/* SIDEBAR SINISTRA */
+.patients-sidebar {
+    width: 360px;
+    background: #fff;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+    overflow-y: auto;
+}
+
+.patients-sidebar h2 {
+    font-size: 20px;
+    color: #0d4071;
+    margin-bottom: 16px
+}
+
+.patients-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px
+}
+
+.patient-btn {
+    width: 100%;
+    padding: 16px;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 12px;
+    color: #475569;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    transition: all .3s ease;
+}
+
+.patient-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    transform: translateX(4px)
+}
+
+.patient-btn.selected {
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    color: #fff;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(25, 118, 210, .3);
+}
+
+/* MINI CARD DATI PAZIENTE (NUOVA POSIZIONE NELLA SIDEBAR) */
+.patient-mini-card {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .35);
+    color: #0f172a;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.patient-mini-card h3 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #0d47a1;
+    margin-bottom: 4px;
+}
+
+.patient-mini-card p {
+    font-size: 14px;
+    color: #1e293b
+}
+
+.patient-mini-card strong {
+    font-weight: 700;
+    color: #0d47a1
+}
+
+.analisi-btn {
+    display: block;
+    margin-top: 12px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #75da77 0%, #3f9c44 100%);
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.analisi-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.5);
+}
+
+.riassunto-btn {
+    display: block;
+    margin-top: 8px;
+    padding: 10px 16px;
+    background: linear-gradient(135deg, #b176e8 0%, #8a2bb8 100%);
+    color: white;
+    text-align: center;
+    text-decoration: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 8px rgba(156, 39, 176, 0.3);
+}
+
+.riassunto-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(156, 39, 176, 0.5);
+}
+
+.divider {
+    height: 1px;
+    background: #e2e8f0;
+    margin: 16px 0
+}
+
+/* COLONNA NOTE DESTRA */
+.content-area {
+    flex: 1;
+    background: #fff;
+    border-radius: 20px;
+    padding: 32px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .08);
+    overflow-y: auto;
+}
+
+.notes-section h2 {
+    font-size: 24px;
+    color: #0d4071;
+    margin-bottom: 24px
+}
+
+.note-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+    border-left: 4px solid #1565c0;
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .05);
+    position: relative;
+}
+
+/* Header della nota con data e emotion box */
+.note-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.note-header p {
+    margin: 0;
+}
+
+/* Box Emozione Predominante - compatto in alto a destra */
+.emotion-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.emotion-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 5px 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    cursor: help;
+    transition: all 0.3s ease;
+}
+
+.emotion-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Tooltip custom */
+.custom-tooltip {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 8px;
+    background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%);
+    color: white;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+    white-space: normal;
+    min-width: 250px;
+    max-width: 400px;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(25, 118, 210, 0.3);
+}
+
+/* Freccia del tooltip - punta verso l'alto a destra */
+.custom-tooltip::before {
+    content: '';
+    position: absolute;
+    bottom: 100%;
+    right: 20px;
+    border: 8px solid transparent;
+    border-bottom-color: #1976d2;
+}
+
+/* Mostra tooltip al passaggio del mouse */
+.emotion-wrapper:hover .custom-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(5px);
+}
+
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    background: rgba(0, 0, 0, 0.15);
+    border-radius: 50%;
+    font-size: 11px;
+    font-weight: 700;
+    font-style: italic;
+    font-family: Georgia, 'Times New Roman', serif;
+    color: inherit;
+    opacity: 0.7;
+    transition: opacity 0.2s ease, background 0.2s ease;
+    margin-left: 4px;
+}
+
+.emotion-box:hover .info-icon {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+/* Emozioni positive - Verde */
+.emotion-box.emotion-positive {
+    background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%);
+    border: 1px solid #81c784;
+}
+
+.emotion-box.emotion-positive .emotion-text {
+    color: #2e7d32;
+}
+
+/* Emozioni negative - Rosso/Rosa */
+.emotion-box.emotion-negative {
+    background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+    border: 1px solid #e57373;
+}
+
+.emotion-box.emotion-negative .emotion-text {
+    color: #c62828;
+}
+
+/* Emozioni ansiose - Giallo/Ambra */
+.emotion-box.emotion-anxious {
+    background: linear-gradient(135deg, #fff8e1 0%, #ffecb3 100%);
+    border: 1px solid #ffd54f;
+}
+
+.emotion-box.emotion-anxious .emotion-text {
+    color: #f57f17;
+}
+
+/* Emozioni neutre - Lilla */
+.emotion-box.emotion-neutral {
+    background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%);
+    border: 1px solid #ba68c8;
+}
+
+.emotion-box.emotion-neutral .emotion-text {
+    color: #7b1fa2;
+}
+
+.emotion-emoji {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.emotion-text {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+}
+
+/* Container per i tag (emozione + contesto) */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+/* Box Contesto Sociale - stile simile all'emozione */
+.context-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.context-box {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 8px;
+    padding: 5px 10px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+    position: relative;
+    cursor: help;
+    transition: all 0.3s ease;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    border: 1px solid #b0bec5;
+}
+
+.context-box:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.context-wrapper:hover .custom-tooltip {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(5px);
+}
+
+.context-box:hover .info-icon {
+    opacity: 1;
+    background: rgba(0, 0, 0, 0.25);
+}
+
+.context-emoji {
+    font-size: 16px;
+    line-height: 1;
+}
+
+.context-text {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: capitalize;
+    color: #78909c;
+}
+
+.note-card p {
+    margin: 12px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #475569
+}
+
+.note-card strong {
+    color: #1e293b;
+    font-weight: 600
+}
+
+.note-separator {
+    height: 1px;
+    background: linear-gradient(to right, #e2e8f0, transparent);
+    margin: 16px 0
+}
+
+.clinical-text {
+    background: rgba(25, 118, 210, .06);
+    border-left: 3px solid #1565c0;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 12px;
+}
+
+/* Stili per contenuto Markdown nelle note cliniche */
+.markdown-content {
+    line-height: 1.7;
+    color: #1e293b;
+}
+
+.markdown-content p {
+    margin: 8px 0;
+}
+
+.markdown-content strong {
+    font-weight: 700;
+    color: #0d47a1;
+}
+
+.markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 12px 0;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.markdown-content th,
+.markdown-content td {
+    padding: 10px 14px;
+    text-align: left;
+    border: 1px solid #e2e8f0;
+}
+
+.markdown-content th {
+    background: #1565c0;
+    color: #fff;
+    font-weight: 600;
+}
+
+.markdown-content tr:nth-child(even) {
+    background: #f8fafc;
+}
+
+.markdown-content ul,
+.markdown-content ol {
+    margin: 8px 0;
+    padding-left: 24px;
+}
+
+.markdown-content li {
+    margin: 4px 0;
+}
+
+.doctor-response-form {
+    margin-top: 16px
+}
+
+.doctor-response-form label {
+    display: block;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+textarea {
+    width: 100%;
+    min-height: 100px;
+    padding: 14px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 14px;
+    resize: vertical;
+    transition: all .3s ease;
+    background: #f9fafb;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+textarea:focus {
+    outline: none;
+    border-color: #1976d2;
+    background: #fff;
+    box-shadow: 0 0 0 4px rgba(25, 118, 210, .15);
+}
+
+.rigenerate-btn {
+    /*margin-top: 12px;*/
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s ease;
+    color: #fff;
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    box-shadow: 0 6px 16px rgba(25, 118, 210, .3);
+}
+
+.save-btn {
+    margin-top: 12px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all .3s ease;
+    color: #fff;
+    background: linear-gradient(135deg, #1976d2 0%, #0d47a1 100%);
+    box-shadow: 0 6px 16px rgba(25, 118, 210, .3);
+}
+
+.save-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 22px rgba(25, 118, 210, .4)
+}
+
+.empty-state {
+    text-align: center;
+    padding: 80px 20px;
+    color: #94a3b8
+}
+
+.empty-state p {
+    font-size: 16px;
+    margin-bottom: 8px
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 8px
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 10px
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8
+}
+
+/* Modal Base Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(30, 41, 59, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    padding: 32px 28px;
+    text-align: center;
+    min-width: 340px;
+    max-width: 540px;
+    width: 100%;
+}
+
+.modal-content h2 {
+    font-size: 22px;
+    margin-bottom: 12px;
+}
+
+.modal-content p {
+    font-size: 16px;
+    color: #475569;
+    margin-bottom: 16px;
+    word-break: break-word;
+}
+
+/* Loading Modal */
+.loading-modal .modal-content {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 2px solid #1976d2;
+}
+
+.loading-modal h2 {
+    color: #1976d2 !important;
+    font-size: 22px;
+    margin-bottom: 20px;
+}
+
+.loading-animation {
+    margin: 20px 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.loading-dot {
+    width: 12px;
+    height: 12px;
+    background: #1976d2;
+    border-radius: 50%;
+    animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dot:nth-child(1) {
+    animation-delay: -0.32s;
+}
+
+.loading-dot:nth-child(2) {
+    animation-delay: -0.16s;
+}
+
+@keyframes bounce {
+    0%, 80%, 100% {
+        transform: scale(0);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.note-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+@media (max-width: 1024px) {
+    .main-container {
+        flex-direction: column
+    }
+
+    .patients-sidebar {
+        width: 100%
+    }
+}
+
+/* ============================================================================
+   MODULO EMERGENZA/CRISI - STILI PER VISTA MEDICO
+   ============================================================================ */
+
+/* Nota di emergenza - bordo rosso e sfondo rosso chiaro */
+.note-card.emergency-note {
+    border-left: 6px solid #dc3545;
+    background: linear-gradient(135deg, #fff5f5 0%, #fee2e2 100%);
+    box-shadow: 0 4px 20px rgba(220, 53, 69, 0.2), 0 0 0 1px rgba(220, 53, 69, 0.1);
+    /*animation: emergency-pulse 2s ease-in-out infinite;*/
+}
+
+/*@keyframes emergency-pulse {*/
+/*    0%, 100% {*/
+/*        box-shadow: 0 4px 20px rgba(220, 53, 69, 0.2), 0 0 0 1px rgba(220, 53, 69, 0.1);*/
+/*    }*/
+/*    50% {*/
+/*        box-shadow: 0 4px 30px rgba(220, 53, 69, 0.35), 0 0 0 2px rgba(220, 53, 69, 0.2);*/
+/*    }*/
+/*}*/
+
+.note-card.emergency-note:hover {
+    box-shadow: 0 6px 24px rgba(220, 53, 69, 0.35);
+}
+
+/* Badge di emergenza */
+.emergency-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 14px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.4);
+    /*animation: badge-pulse 1.5s ease-in-out infinite;*/
+}
+
+/*@keyframes badge-pulse {*/
+/*    0%, 100% {*/
+/*        transform: scale(1);*/
+/*    }*/
+/*    50% {*/
+/*        transform: scale(1.02);*/
+/*    }*/
+/*}*/
+
+.emergency-badge-icon {
+    font-size: 18px;
+    /*animation: icon-shake 0.5s ease-in-out infinite;*/
+}
+
+/*@keyframes icon-shake {*/
+/*    0%, 100% {*/
+/*        transform: rotate(0deg);*/
+/*    }*/
+/*    25% {*/
+/*        transform: rotate(-5deg);*/
+/*    }*/
+/*    75% {*/
+/*        transform: rotate(5deg);*/
+/*    }*/
+/*}*/
+
+.emergency-badge-text {
+    letter-spacing: 0.5px;
+}
+
+/* Box di allerta per il medico */
+.emergency-alert-box {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 2px solid #f87171;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-top: 12px;
+}
+
+.emergency-alert-box p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.6;
+    color: #991b1b;
+}
+
+.emergency-alert-box strong {
+    color: #b91c1c;
+}
+
+/* Badge "Analisi in corso" per note in generazione */
+.generating-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 13px;
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.4);
+}
+
+.generating-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgb(255, 214, 142);
+    border-top-color: #92400e;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.generating-text {
+    letter-spacing: 0.3px;
+}
+
+/* Sezione clinica in generazione */
+.clinical-text.generating {
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+    border: 2px dashed #f59e0b;
+    border-radius: 12px;
+    padding: 24px;
+    text-align: center;
+}
+
+.generating-clinical-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    color: #92400e;
+    font-weight: 600;
+    font-size: 15px;
+}
+

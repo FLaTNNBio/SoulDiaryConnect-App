@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+{%  load static %}
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>Conferma eliminazione nota</title>
+    <link rel="stylesheet" href="{% static 'SoulDiaryConnectApp/css/conferma_eliminazione.css' %}">
+</head>
+<body>
+<div class="container">
+    <div class="custom-alert">
+        <h2>Attenzione!</h2>
+        <p>Sei sicuro di voler <b>eliminare definitivamente</b> questa nota?</p>
+        <p><strong>Data:</strong> {{ nota.data_nota|date:"d/m/Y" }} alle ore {{ nota.data_nota|date:"H:i" }}</p>
+        <p><strong>Nota:</strong> {{ nota.testo_paziente }}</p>
+    </div>
+    <button class="btn-danger" id="openModalBtn">Elimina definitivamente</button>
+    <a href="/paziente/home/" class="btn-secondary">Annulla</a>
+</div>
+
+<!-- Modal -->
+<div id="confirmModal" class="modal-overlay" style="display:none;">
+    <div class="modal-content">
+        <h2>Conferma eliminazione</h2>
+        <p>Vuoi davvero eliminare questa nota? L'operazione è irreversibile.</p>
+        <form method="POST" id="deleteForm">
+            {% csrf_token %}
+            <button type="submit" class="btn-danger">Conferma eliminazione</button>
+            <button type="button" class="btn-secondary" id="closeModalBtn">Annulla</button>
+        </form>
+    </div>
+</div>
+<script>
+    document.getElementById('openModalBtn').onclick = function() {
+        document.getElementById('confirmModal').style.display = 'flex';
+    };
+    document.getElementById('closeModalBtn').onclick = function() {
+        document.getElementById('confirmModal').style.display = 'none';
+    };
+</script>
+
+<footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.65rem; color: rgba(100, 116, 139, 0.5); background: transparent; z-index: 100;">
+    L'IA può commettere errori. Verifica sempre le informazioni ricevute.
+</footer>
+</body>
+</html>
+

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+{% load static %}
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - SoulDiaryConnect</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="{% static 'SoulDiaryConnectApp/css/home.css' %}">
+</head>
+
+<body>
+    <video class="background-video" autoplay loop muted playsinline>
+        <source src="/media/wallpaper.mp4" type="video/mp4">
+    </video>
+
+    <div class="overlay"></div>
+
+    <!-- solo login in alto a destra -->
+    <header class="header">
+        <a href="{% url 'login' %}" class="login-btn">
+            Login
+            <img src="/media/enter.png" alt="">
+        </a>
+    </header>
+
+    <!-- hero centrale: Benvenuto su -> logo -> subtitle -->
+    <main class="hero-section">
+        <h1 class="hero-kicker">Benvenuto su</h1>
+
+        <img class="hero-main-logo" src="/media/2-01.png" alt="SoulDiaryConnect">
+
+        <p class="hero-subtitle">Il diario digitale, sempre al tuo fianco.</p>
+    </main>
+
+    <footer style="position: fixed; bottom: 0; width: 100%; text-align: center; padding: 0.5rem; font-size: 0.65rem; color: rgba(255, 255, 255, 0.4); background: transparent; z-index: 100;">
+        L'IA può commettere errori. Verifica sempre le informazioni ricevute.
+    </footer>
+</body>
+</html>
