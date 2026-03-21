@@ -54,6 +54,9 @@ Note: If you encounter permission errors during this step, try running the Comma
 Install PostgreSQL following the [Official guidelines](https://www.postgresql.org/download/).<br>
 Enter the database shell to execute the initial queries:
 ```sh
+psql -U postgres
+CREATE DATABASE souldiaryconnect;
+\q
 python manage.py dbshell
 \i souldiaryconnect.sql
 ```
@@ -118,7 +121,7 @@ python manage.py runserver
 #### **2.5. Expose the server to the Mobile App (via Ngrok)**
 Since the React Native mobile app cannot directly access your computer's localhost, you need to expose the local Django server to the internet using Ngrok.
 
-- Download and install Ngrok.
+- Download and install [Ngrok](https://ngrok.com/).
 - Open a new terminal window (leave the Django server running in the first one).
 - Authenticate your Ngrok agent (you only need to do this once):
 ```sh
@@ -128,8 +131,10 @@ ngrok config add-authtoken YOUR_NGROK_TOKEN
 ```sh
 ngrok http 8000
 ```
-- Ngrok will generate a public URL (e.g., https://your-ngrok-link.ngrok-free.app). Copy this URL.
+Ngrok will generate a public URL (e.g., https://your-ngrok-link.ngrok-free.app). Copy this URL.<br><br>
 
+
+*** 
 > **Note**: Before starting the React Native app, you must configure the API connection.
 - Navigate to the **frontend/src/constants/ directory**.
 - Create a new file named **Config.ts** (if it doesn't already exist).
