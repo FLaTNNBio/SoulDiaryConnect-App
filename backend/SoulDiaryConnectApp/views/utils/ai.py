@@ -407,7 +407,11 @@ def _recupera_contesto_note_precedenti(paziente, limite=5, escludi_nota_id=None)
     contesto = []
     for i, nota in enumerate(reversed(list(note_precedenti)), 1):
         # Converti al timezone locale per la formattazione
-        data_locale = timezone.localtime(nota.data_nota)
+        if timezone.is_aware(nota.data_nota):
+            data_locale = timezone.localtime(nota.data_nota)
+        else:
+            data_locale = timezone.make_aware(nota.data_nota)
+        
         data_ora_formattata = data_locale.strftime('%d/%m/%Y alle %H:%M')
         emozione = nota.emozione_predominante or "non specificata"
         testo_breve = nota.testo_paziente[:150] + "..." if len(nota.testo_paziente) > 150 else nota.testo_paziente
