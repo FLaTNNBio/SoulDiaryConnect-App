@@ -32,6 +32,9 @@ The AI used is [Llama 3.1:8B](https://ollama.com/library/llama3.1:8b), running l
 ## Installation Guide
 
 ### **1️. Clone the repository**
+> **Windows Users:** Due to Windows' historical 260-character path limit and how React Native/Android build tools (CMake/Ninja) handle deep directory structures, it is **highly recommended** to clone this project directly into the root of your drive (e.g., `C:\SoulDiaryConnect-App`). 
+> 
+
 ```sh
 git clone https://github.com/FLaTNNBio/SoulDiaryConnect-App.git
 cd SoulDiaryConnectApp
@@ -162,7 +165,7 @@ npx expo prebuild --platform android --clean
 #### **3.4. Run the app on an emulator (or physical device)**
 Ensure you have an Android emulator running (via Android Studio) or a physical device connected with USB debugging enabled, then run:
 ```sh
-npx expo run:android
+npx expo run:android --device
 ```
 
 

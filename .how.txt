@@ -67,6 +67,7 @@ npx expo start --dev-client
 
 # Generate apk Android Studio prima volta
 npx expo prebuild --platform android --clean
+npx expo run:android --device
 npx expo run:android
 
 Percorso apk:
