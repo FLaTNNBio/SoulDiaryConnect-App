@@ -70,6 +70,10 @@ npx expo prebuild --platform android --clean
 npx expo run:android --device
 npx expo run:android
 
+
+
+
+
 Percorso apk:
 C:\Users\xmadm\Desktop\Projects\SoulDiaryConnectApp\frontend\android\app\build\outputs\apk\debug
 
